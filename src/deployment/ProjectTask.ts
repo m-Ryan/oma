@@ -1,5 +1,9 @@
 import { ProjectEntity } from "../modules/project/entities/project.entity";
-
+import { exec, cd, echo, ExecOptions } from 'shelljs';
+import { promisify } from "util";
+import { existsSync } from "fs";
+import path from 'path';
+import { PROJECT_CLONE_DIR } from "../constant";
 
 export interface ProjectItem {
 
@@ -11,8 +15,11 @@ export interface ProjectItem {
  */
 export class ProjectTask {
   private projectItem: ProjectEntity;
+  private projectDir: string;
   constructor(projectItem: ProjectEntity) {
     this.projectItem = projectItem;
+    const projectName = path.basename(projectItem.git_path).replace('.git', '');
+    this.projectDir = path.resolve(PROJECT_CLONE_DIR, projectName);
   }
 
   /**
@@ -32,8 +39,12 @@ export class ProjectTask {
     this.runBuild();
   }
 
-  runClone() {
+  async runClone() {
+    const git_path = this.projectItem.git_path;
+    const name = this.projectItem.name;
+    if (await promisify(existsSync)(this.projectDir)) {
 
+    }
   }
 
   runTest() {
@@ -46,3 +57,4 @@ export class ProjectTask {
 
 
 }
+
