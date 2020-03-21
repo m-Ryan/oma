@@ -47,8 +47,8 @@ export class ProjectTask {
     }
   }
 
-  runTest() {
-
+  async runTest() {
+    console.log('test')
   }
 
   runBuild() {
