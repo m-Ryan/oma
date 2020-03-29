@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import util from 'util';
+import dayjs from 'dayjs';
 
 export function isDevelopment() {
 	return process.env.NODE_ENV === 'development';
@@ -21,4 +22,8 @@ export async function mkdir(dirname: string) {
 		return true;
 	}
 
+}
+
+export function getNowTimeStamp() {
+	return dayjs().unix();
 }

@@ -16,4 +16,8 @@ const ormConfig = require(mysqlConfigPath);
   controllers: [],
   providers: [],
 })
-export class AppModule { }
+export class AppModule {
+  constructor() {
+    console.log('init ')
+  }
+}

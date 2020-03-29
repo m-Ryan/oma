@@ -9,8 +9,8 @@ import {
 import { ProjectEntity } from './project.entity';
 
 
-@Entity('project')
-export class ProjectEnvEntity extends BaseEntity {
+@Entity('project_env')
+export class ProjectEnvEntity {
   @PrimaryGeneratedColumn() project_id: number;
 
   @Column({

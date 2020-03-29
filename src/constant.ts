@@ -1,1 +1,1 @@
-export const PROJECT_CLONE_DIR = 'example';
+export const PROJECT_CLONE_DIR = '.repository';

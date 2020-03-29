@@ -10,11 +10,14 @@ import {
 } from 'typeorm';
 
 import { ProjectEnvEntity } from './project_env.entity';
+import { ProjectTaskEntity } from './project_task.entity';
 
 
 @Entity('project')
-export class ProjectEntity extends BaseEntity {
-  @PrimaryGeneratedColumn() project_id: number;
+export class ProjectEntity {
+  @PrimaryGeneratedColumn({
+    type: 'int',
+  }) project_id: number;
 
   @Column({
     type: 'varchar',
@@ -63,5 +66,8 @@ export class ProjectEntity extends BaseEntity {
 
   @OneToMany((type) => ProjectEnvEntity, (ProjectEnvEntity) => ProjectEnvEntity.project)
   list: ProjectEnvEntity[];
+
+  @OneToMany((type) => ProjectTaskEntity, (ProjectTaskEntity) => ProjectTaskEntity.project)
+  tasks: ProjectTaskEntity[];
 
 }
