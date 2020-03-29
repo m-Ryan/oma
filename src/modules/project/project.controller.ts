@@ -14,7 +14,8 @@ export class DeploymentController {
 
   @Post('push')
   push(@Body() data: any) {
-    return console.log(data);
+    console.log(data);
+    return data;
   }
 
 
