@@ -4,7 +4,7 @@ export interface ProjectItem {
 
 export class ProjectSchedule {
 
-  private projects = [];
+  private projects: ProjectItem[] = [];
 
   add(item: ProjectItem) {
     this.projects.push(item);
