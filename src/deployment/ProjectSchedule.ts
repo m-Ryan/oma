@@ -39,6 +39,7 @@ export class ProjectSchedule {
     newTask.project = project;
     this.pt.save(newTask);
     this.taskQueue.push(newTask);
+    this.beginTasks();
   }
 
   beginTasks() {

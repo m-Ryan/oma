@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotAcceptableException } from '@nestjs/common';
 import { ProjectSchedule } from 'src/src/deployment/ProjectSchedule';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ProjectEntity } from './entities/project.entity';
@@ -25,7 +25,7 @@ export class DeploymentService {
       name: dto.name
     })
     if (project) {
-      throw new Error('已有同名项目')
+      throw new NotAcceptableException('已有同名项目')
     }
     const newProject = this.pj.create();
     newProject.name = dto.name;
@@ -38,7 +38,9 @@ export class DeploymentService {
 
   async pushMergePR(dto: CreatePushMergePRDTO) {
 
-    this.ps.createTask(dto);
+    await this.ps.createTask(dto);
+
+    return {}
   }
 
 }
