@@ -28,6 +28,13 @@ export class ProjectEntity {
 
   @Column({
     type: 'varchar',
+    length: 20,
+    default: ''
+  })
+  repository_name: string;
+
+  @Column({
+    type: 'varchar',
     length: 255,
     default: ''
   })

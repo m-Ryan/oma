@@ -35,5 +35,4 @@ lerna-debug.log*
 
 .repository
 .deployment
-.deployment_history
 config/**

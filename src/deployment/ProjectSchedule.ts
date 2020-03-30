@@ -1,5 +1,5 @@
 import { InjectRepository } from "@nestjs/typeorm";
-import { Injectable } from "@nestjs/common";
+import { Injectable, NotAcceptableException } from "@nestjs/common";
 import { ProjectEntity } from "../modules/project/entities/project.entity";
 import { Repository, Transaction } from "typeorm";
 import { CreatePushMergePRDTO } from "../modules/project/dto/push-merge.pr.dto";
@@ -18,16 +18,15 @@ export class ProjectSchedule {
     @InjectRepository(ProjectEntity) private readonly ps: Repository<ProjectEntity>,
   ) { }
 
-  @Transaction()
-  async createTask(dto: CreatePushMergePRDTO) {
 
+  async createTask(dto: CreatePushMergePRDTO) {
     const project = await this.ps.findOne({
-      name: dto.repository.name,
+      repository_name: dto.repository.name,
       deleted_at: 0
     });
 
     if (!project) {
-      throw new Error('no project');
+      throw new NotAcceptableException('no project');
     }
 
     const newTask = this.pt.create();
@@ -37,15 +36,14 @@ export class ProjectSchedule {
     newTask.created_at = dayjs().unix();
     newTask.updated_at = dayjs().unix();
     newTask.project = project;
-    this.pt.save(newTask);
+    await this.pt.save(newTask);
     this.taskQueue.push(newTask);
     this.beginTasks();
   }
 
   beginTasks() {
-    const tasks = this.taskQueue.splice(2, this.maxLimit - this.taskBuildQueue.length);
+    const tasks = this.taskQueue.splice(0, this.maxLimit - this.taskBuildQueue.length);
     if (tasks.length === 0) return;
-
     this.taskBuildQueue.push(...tasks);
     tasks.forEach(task => {
       createBuildPipline({
@@ -54,17 +52,16 @@ export class ProjectSchedule {
           console.log(logs)
         },
         onSuccess: () => {
-          this.onTaskOver({ task }).then(() => this.beginTasks());
+          this.onTaskOver({ task });
         },
         onError: (errMsg) => {
-          this.onTaskOver({ task, errMsg }).then(() => this.beginTasks());
+          this.onTaskOver({ task, errMsg });
         },
       });
     })
-
   }
 
-  onTaskOver({ task, errMsg }: {
+  async onTaskOver({ task, errMsg }: {
     task: ProjectTaskEntity,
     errMsg?: string
   }) {
@@ -74,7 +71,9 @@ export class ProjectSchedule {
       task.err_msg = errMsg;
       task.status = ProjectTaskEntityStatus.ERROR;
     }
-    return this.pt.save(task);
+    await this.pt.save(task);
+    this.taskBuildQueue = this.taskBuildQueue.filter(item => item !== task);
+    this.beginTasks()
   }
 
 }

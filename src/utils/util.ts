@@ -15,12 +15,12 @@ export function isProduction() {
 }
 
 export async function mkdir(dirname: string) {
-	const existsSync = util.promisify(fs.existsSync);
+	const existsSync = util.promisify(fs.exists);
 	if (await existsSync(dirname)) {
 		return true;
 	}
 	if (await mkdir(path.dirname(dirname))) {
-		const mkdirSync = util.promisify(fs.mkdirSync);
+		const mkdirSync = util.promisify(fs.mkdir);
 		await mkdirSync(dirname, {});
 		return true;
 	}
@@ -32,9 +32,21 @@ export function getNowTimeStamp() {
 }
 
 export function getTaskDir(task: ProjectTaskEntity) {
-	return dayjs(task.created_at * 1000).format('YYYY-MM-DD-') + task.task_id;
+	return dayjs(task.created_at * 1000).format('YYYY-MM-DD-t') + task.task_id;
+}
+
+export function getTaskId(dirname: string) {
+	return parseInt(dirname.replace(/.*\-t(\d+)/, '$1'));
 }
 
 export function existsDir(pathUrl: string) {
 	return util.promisify(fs.exists)(pathUrl);
+}
+
+export function readdir(pathUrl: string) {
+	return util.promisify(fs.readdir)(pathUrl);
+}
+
+export function getRepositoryName(gitPath: string) {
+	return gitPath.replace(/(.*)\/(.*)\.git$/, '$2')
 }

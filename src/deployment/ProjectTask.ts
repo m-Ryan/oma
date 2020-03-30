@@ -3,7 +3,8 @@ import { runExec } from '../utils/shell';
 import path from 'path';
 import shelljs from 'shelljs';
 import { ProjectTaskEntity } from '../modules/project/entities/project_task.entity';
-import { getTaskDir, existsDir } from '../utils/util';
+import { getTaskDir, existsDir, getRepositoryName, mkdir, readdir, getTaskId } from '../utils/util';
+import { REPOSITORY_DIR, DEPLOYMENT_DIR, MAX_HISTORY_LIMIT } from '../constant';
 
 /**
  * 假设分三个环境 master，dev，test
@@ -19,16 +20,13 @@ export async function createBuildPipline(options: {
 }) {
   const { task, onError, onSuccess, onProgress } = options;
   const project = task.project;
-  const projectDir = project.git_path.replace(/(.*)\/(.*)\.git$/, '$2');
-  const repositoryPath = path.resolve('../../.repository', projectDir);
-  const deploymentPath = path.resolve(
-    '../../.deployment',
-    projectDir,
-    getTaskDir(task),
-  );
-
+  const projectDir = getRepositoryName(project.git_path);
+  const repositoryPath = path.resolve(REPOSITORY_DIR, projectDir);
+  const deploymentDir = path.resolve(DEPLOYMENT_DIR, projectDir);
+  const deploymentPath = path.resolve(deploymentDir, getTaskDir(task));
+  await mkdir(deploymentPath);
   try {
-    if (!existsDir(repositoryPath)) {
+    if (!await existsDir(repositoryPath)) {
       await runExec(`git clone ${project.git_path} ${repositoryPath}`, {
         onProgress,
       });
@@ -36,15 +34,26 @@ export async function createBuildPipline(options: {
 
     await runExec(`yarn install`, {
       onProgress,
+      cwd: repositoryPath
     });
 
     await runExec(`yarn build`, {
       onProgress,
+      cwd: repositoryPath
     });
 
-    shelljs.cp('-R', `${repositoryPath}/build`, deploymentPath);
+    const removeDirs = await readdir(deploymentDir)
+      .then(files => {
+        return files
+          .sort((a: string, b: string) => getTaskId(a) - getTaskId(b) > 0 ? 1 : -1)
+          .filter((item, index) => index >= MAX_HISTORY_LIMIT - 1)
+          .map(file => path.resolve(deploymentDir, file))
+      })
+    shelljs.rm('-rf', ...removeDirs);
+    shelljs.mv('-f', `${repositoryPath}/build`, deploymentPath);
     onSuccess();
   } catch (error) {
     onError(error.message || error.toString());
   }
+
 }

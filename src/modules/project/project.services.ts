@@ -6,7 +6,7 @@ import { Repository } from 'typeorm';
 import { CreatePushMergePRDTO } from './dto/push-merge.pr.dto';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { ProjectTaskEntity } from './entities/project_task.entity';
-import { getNowTimeStamp } from 'src/src/utils/util';
+import { getNowTimeStamp, getRepositoryName } from 'src/src/utils/util';
 
 
 @Injectable()
@@ -29,6 +29,7 @@ export class DeploymentService {
     }
     const newProject = this.pj.create();
     newProject.name = dto.name;
+    newProject.repository_name = getRepositoryName(dto.git_path);
     newProject.git_path = dto.git_path;
     newProject.created_at = getNowTimeStamp();
     newProject.updated_at = getNowTimeStamp();
@@ -40,7 +41,7 @@ export class DeploymentService {
 
     await this.ps.createTask(dto);
 
-    return {}
+    return { message: 'success' }
   }
 
 }
