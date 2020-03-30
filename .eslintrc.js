@@ -14,6 +14,6 @@ module.exports = {
     jest: true,
   },
   rules: {
-    "camelcase": "off",
+     'no-multiple-empty-lines': ["error", { "max": 2, "maxEOF": 1 }]
   },
 };

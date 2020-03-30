@@ -1,10 +1,9 @@
 // import { ProjectEntity } from "../modules/project/entities/project.entity";
 import { runExec } from '../utils/shell';
-import dayjs from 'dayjs';
 import path from 'path';
 import shelljs from 'shelljs';
 import { ProjectTaskEntity } from '../modules/project/entities/project_task.entity';
-import { getTaskDir } from '../utils/util';
+import { getTaskDir, existsDir } from '../utils/util';
 
 /**
  * 假设分三个环境 master，dev，test
@@ -13,7 +12,7 @@ import { getTaskDir } from '../utils/util';
  */
 
 export async function createBuildPipline(options: {
-  task: ProjectTaskEntity,
+  task: ProjectTaskEntity;
   onProgress: (log: string) => void;
   onSuccess: () => void;
   onError: (error: string) => void;
@@ -22,20 +21,29 @@ export async function createBuildPipline(options: {
   const project = task.project;
   const projectDir = project.git_path.replace(/(.*)\/(.*)\.git$/, '$2');
   const repositoryPath = path.resolve('../../.repository', projectDir);
-  const deploymentPath = path.resolve('../../.deployment', projectDir, getTaskDir(task));
+  const deploymentPath = path.resolve(
+    '../../.deployment',
+    projectDir,
+    getTaskDir(task),
+  );
+
   try {
-    await runExec(`git clone ${project.git_path} ${repositoryPath}`, {
-      onProgress
-    });
+    if (!existsDir(repositoryPath)) {
+      await runExec(`git clone ${project.git_path} ${repositoryPath}`, {
+        onProgress,
+      });
+    }
+
     await runExec(`yarn install`, {
-      onProgress
+      onProgress,
     });
+
     await runExec(`yarn build`, {
-      onProgress
+      onProgress,
     });
+
     shelljs.cp('-R', `${repositoryPath}/build`, deploymentPath);
     onSuccess();
-
   } catch (error) {
     onError(error.message || error.toString());
   }

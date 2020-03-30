@@ -34,3 +34,7 @@ export function getNowTimeStamp() {
 export function getTaskDir(task: ProjectTaskEntity) {
 	return dayjs(task.created_at * 1000).format('YYYY-MM-DD-') + task.task_id;
 }
+
+export function existsDir(pathUrl: string) {
+	return util.promisify(fs.exists)(pathUrl);
+}
