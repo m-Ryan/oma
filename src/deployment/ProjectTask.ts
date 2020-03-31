@@ -58,7 +58,7 @@ export async function createBuildPipline(options: {
     //     .map(file => path.resolve(deploymentDir, file));
     // });
     // shelljs.rm('-rf', ...removeDirs);
-    shelljs.mv('-f', `${repositoryPath}/build`, deploymentPath);
+    shelljs.cp('-f', `${repositoryPath}/build`, deploymentPath);
     onSuccess();
   } catch (error) {
     onError(error.message || error.toString());

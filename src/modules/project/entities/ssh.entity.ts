@@ -12,40 +12,47 @@ import {
 import { ProjectEnvEntity } from './project_env.entity';
 import { ProjectTaskEntity } from './project_task.entity';
 
-
-@Entity('project')
-export class ProjectEntity {
+@Entity('ssh')
+export class SSHEntity {
   @PrimaryGeneratedColumn({
     type: 'int',
-  }) project_id: number;
+  }) ssh_id: number;
 
   @Column({
     type: 'varchar',
-
     default: ''
   })
   name: string;
 
   @Column({
     type: 'varchar',
-
     default: ''
   })
-  repository_name: string;
+  host: string;
+
+  @Column({
+    type: 'tinyint',
+    default: 22
+  })
+  port: string;
 
   @Column({
     type: 'varchar',
-    length: 255,
     default: ''
   })
-  git_path: string;
+  username: string;
 
   @Column({
     type: 'varchar',
-    length: 255,
     default: ''
   })
-  desc: string;
+  password: string;
+
+  @Column({
+    type: 'varchar',
+    default: ''
+  })
+  privateKey: string;
 
   @Column({
     type: 'int',
@@ -70,11 +77,5 @@ export class ProjectEntity {
     default: 0
   })
   deleted_at: number;
-
-  @OneToMany((type) => ProjectEnvEntity, (ProjectEnvEntity) => ProjectEnvEntity.project)
-  list: ProjectEnvEntity[];
-
-  @OneToMany((type) => ProjectTaskEntity, (ProjectTaskEntity) => ProjectTaskEntity.project)
-  tasks: ProjectTaskEntity[];
 
 }

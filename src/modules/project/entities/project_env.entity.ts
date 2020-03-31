@@ -3,10 +3,12 @@ import {
   Column,
   PrimaryGeneratedColumn,
   BaseEntity,
-  ManyToOne
+  ManyToOne,
+  OneToOne
 } from 'typeorm';
 
 import { ProjectEntity } from './project.entity';
+import { SSHEntity } from './ssh.entity';
 
 
 @Entity('project_env')
@@ -15,7 +17,7 @@ export class ProjectEnvEntity {
 
   @Column({
     type: 'varchar',
-    length: 20,
+
     default: ''
   })
   name: string;
@@ -55,4 +57,8 @@ export class ProjectEnvEntity {
 
   @ManyToOne((type) => ProjectEntity, (ProjectEntity) => ProjectEntity.list)
   project: ProjectEntity;
+
+  @ManyToOne((type) => SSHEntity, (SSHEntity) => SSHEntity.ssh_id)
+  ssh: SSHEntity;
+
 }
