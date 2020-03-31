@@ -11,7 +11,7 @@ export enum ProjectTaskEntityStatus {
   PENDING = 0,
   SUCCESS = 1,
   ERROR = 2,
-  OVERWRITE = 3
+  OVERWRITE = 3,
 }
 
 @Entity('project_task')
@@ -20,62 +20,71 @@ export class ProjectTaskEntity {
 
   @Column({
     type: 'int',
-  }) project_id: number;
-
+  })
+  project_id: number;
 
   @Column({
     type: 'varchar',
     length: 255,
-    default: ''
+    default: '',
   })
   repository: string;
 
   @Column({
     type: 'varchar',
     length: 255,
-    default: ''
+    default: '',
   })
   branch: string;
 
   @Column({
     type: 'varchar',
     length: 255,
-    default: ''
+    default: '',
+  })
+  version: string;
+
+  @Column({
+    type: 'varchar',
+    length: 255,
+    default: '',
   })
   commit: string;
 
   @Column({
     type: 'varchar',
     length: 255,
-    default: ''
+    default: '',
   })
   err_msg: string;
 
   @Column({
     type: 'smallint',
-    default: 0
+    default: 0,
   })
   status: ProjectTaskEntityStatus;
   @Column({
     type: 'int',
-    default: 0
+    default: 0,
   })
   created_at: number;
 
   @Column({
     type: 'int',
-    default: 0
+    default: 0,
   })
   updated_at: number;
 
   @Column({
     type: 'int',
-    default: 0
+    default: 0,
   })
   deleted_at: number;
 
-  @ManyToOne((type) => ProjectEntity, (ProjectEntity) => ProjectEntity.project_id)
+  @ManyToOne(
+    type => ProjectEntity,
+    ProjectEntity => ProjectEntity.project_id,
+  )
   @JoinColumn({ name: 'project_id' })
   project: ProjectEntity;
-
 }

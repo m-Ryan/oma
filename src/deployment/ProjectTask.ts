@@ -3,7 +3,14 @@ import { runExec } from '../utils/shell';
 import path from 'path';
 import shelljs from 'shelljs';
 import { ProjectTaskEntity } from '../modules/project/entities/project_task.entity';
-import { getTaskDir, existsDir, getRepositoryName, mkdir, readdir, getTaskId } from '../utils/util';
+import {
+  getTaskDir,
+  existsDir,
+  getRepositoryName,
+  mkdir,
+  readdir,
+  getTaskId,
+} from '../utils/util';
 import { REPOSITORY_DIR, DEPLOYMENT_DIR, MAX_HISTORY_LIMIT } from '../constant';
 
 /**
@@ -26,7 +33,7 @@ export async function createBuildPipline(options: {
   const deploymentPath = path.resolve(deploymentDir, getTaskDir(task));
   await mkdir(deploymentPath);
   try {
-    if (!await existsDir(repositoryPath)) {
+    if (!(await existsDir(repositoryPath))) {
       await runExec(`git clone ${project.git_path} ${repositoryPath}`, {
         onProgress,
       });
@@ -34,26 +41,26 @@ export async function createBuildPipline(options: {
 
     await runExec(`yarn install`, {
       onProgress,
-      cwd: repositoryPath
+      cwd: repositoryPath,
     });
 
     await runExec(`yarn build`, {
       onProgress,
-      cwd: repositoryPath
+      cwd: repositoryPath,
     });
 
-    const removeDirs = await readdir(deploymentDir)
-      .then(files => {
-        return files
-          .sort((a: string, b: string) => getTaskId(a) - getTaskId(b) > 0 ? 1 : -1)
-          .filter((item, index) => index >= MAX_HISTORY_LIMIT - 1)
-          .map(file => path.resolve(deploymentDir, file))
-      })
-    shelljs.rm('-rf', ...removeDirs);
+    // const removeDirs = await readdir(deploymentDir).then(files => {
+    //   return files
+    //     .sort((a: string, b: string) =>
+    //       getTaskId(b) - getTaskId(a) > 0 ? 1 : -1,
+    //     )
+    //     .filter((item, index) => index >= MAX_HISTORY_LIMIT - 1)
+    //     .map(file => path.resolve(deploymentDir, file));
+    // });
+    // shelljs.rm('-rf', ...removeDirs);
     shelljs.mv('-f', `${repositoryPath}/build`, deploymentPath);
     onSuccess();
   } catch (error) {
     onError(error.message || error.toString());
   }
-
 }
