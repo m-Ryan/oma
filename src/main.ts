@@ -23,28 +23,32 @@
 // }
 // bootstrap();
 
-import {Client} from 'ssh2';
-import { connectSSH } from './deployment/SSHConnect';
+import { Client } from 'ssh2';
+import { getSSHInstance } from './utils/ssh';
 
 async function run() {
-const conn = await connectSSH({
-  host: '',
-  port: 22,
-  username: 'root',
-  password: ''
-  // privateKey: require('fs').readFileSync('/here/is/my/key')
-})
-// conn.exec('cd /usr/web && ls', function(err, stream) {
-//   if (err) throw err;
-//   stream.on('close', function(code: number, signal: any) {
-//     console.log('Stream :: close :: code: ' + code + ', signal: ' + signal);
-//     conn.end();
-//   }).on('data', function(data: any) {
-//     console.log('STDOUT: ' + data);
-//   }).stderr.on('data', function(data) {
-//     console.log('STDERR: ' + data);
-//   });
-// });
+  try {
+    const conn = await getSSHInstance({
+      host: '122.51.191.21',
+      port: 22,
+      username: 'root',
+      password: ''
+      // privateKey: require('fs').readFileSync('/here/is/my/key')
+    })
+    const stream = await conn.execComand('cd /usr/web && ls');
+
+    // stream.on('data', function (data: any) {
+    //   console.log('STDOUT: ' + data);
+    // }).stderr.on('data', function (data) {
+    //   console.log('STDERR: ' + data);
+    // });
+
+    await conn.downloadFile('/test', '/usr/web/oma/src');
+    conn.end()
+  } catch (error) {
+    console.log(error)
+  }
+
 }
 
 run();
