@@ -29,13 +29,13 @@ import { getSSHInstance } from './utils/ssh';
 async function run() {
   try {
     const conn = await getSSHInstance({
-      host: '122.51.191.21',
+      host: '',
       port: 22,
       username: 'root',
       password: ''
       // privateKey: require('fs').readFileSync('/here/is/my/key')
     })
-    const stream = await conn.execComand('cd /usr/web && ls');
+    // const stream = await conn.execComand('cd /usr/web && ls');
 
     // stream.on('data', function (data: any) {
     //   console.log('STDOUT: ' + data);
@@ -43,7 +43,8 @@ async function run() {
     //   console.log('STDERR: ' + data);
     // });
 
-    await conn.downloadFile('/test', '/usr/web/oma/src');
+    // await conn.downloadFile('/Users/ch.mao/Desktop/practice/oma/test/1585904719937_ssh.tar.gz', '/tmp/1585904719937_ssh.tar.gz');
+    await conn.upload('/Users/ch.mao/Desktop/practice/oma/test', '/usr/web/oma/src');
     conn.end()
   } catch (error) {
     console.log(error)

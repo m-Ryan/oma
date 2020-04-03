@@ -14,6 +14,10 @@ export function isProduction() {
 	return process.env.NODE_ENV === 'production';
 }
 
+export function delay(time = 1000) {
+	return new Promise(resolve=>setTimeout(resolve, time))
+}
+
 export async function mkdir(dirname: string) {
 	const existsSync = util.promisify(fs.exists);
 	if (await existsSync(dirname)) {
