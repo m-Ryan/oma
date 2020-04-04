@@ -25,7 +25,7 @@ export class UserEntity {
 
   @Column({
     type: 'varchar',
-    default: ''
+    default: 'http://assets.maocanhua.cn/FlYNsz6pq2voMT4z0citFEuFa-lc'
   })
   avatar: string;
 

@@ -2,15 +2,14 @@ import {
   Entity,
   Column,
   PrimaryGeneratedColumn,
-  BaseEntity,
-  getConnection,
-  OneToOne,
-  JoinColumn,
-  OneToMany
+  OneToMany,
 } from 'typeorm';
-
-import { ProjectEnvEntity } from './project_env.entity';
 import { ProjectTaskEntity } from './project_task.entity';
+
+export enum SSHType {
+  PWD = 1,
+  PRIVATE_KEY = 2
+}
 
 @Entity('ssh')
 export class SSHEntity {
@@ -31,10 +30,10 @@ export class SSHEntity {
   host: string;
 
   @Column({
-    type: 'tinyint',
+    type: 'int',
     default: 22
   })
-  port: string;
+  port: number;
 
   @Column({
     type: 'varchar',
@@ -65,6 +64,12 @@ export class SSHEntity {
     default: 0
   })
   user_id: number;
+
+  @Column({
+    type: 'tinyint',
+    default: 0
+  })
+  type: SSHType;
 
   @Column({
     type: 'int',

@@ -4,16 +4,27 @@ import {
   PrimaryGeneratedColumn,
   BaseEntity,
   ManyToOne,
-  OneToOne
+  OneToOne,
+  OneToMany,
+  JoinColumn
 } from 'typeorm';
 
 import { ProjectEntity } from './project.entity';
 import { SSHEntity } from './ssh.entity';
+import { ProjectTaskEntityStatus, ProjectTaskEntity } from './project_task.entity';
 
 
 @Entity('project_env')
 export class ProjectEnvEntity {
-  @PrimaryGeneratedColumn() project_id: number;
+  @PrimaryGeneratedColumn({
+    type: 'int',
+  }) project_env_id: number;
+
+  @Column({
+    type: 'int',
+    default: 0
+  })
+  project_id: number;
 
   @Column({
     type: 'varchar',
@@ -21,6 +32,18 @@ export class ProjectEnvEntity {
     default: ''
   })
   name: string;
+
+  @Column({
+    type: 'int',
+    default: 0
+  })
+  user_id: number;
+
+  @Column({
+    type: 'int',
+    default: 0
+  })
+  ssh_id: number;
 
   @Column({
     type: 'varchar',
@@ -35,6 +58,13 @@ export class ProjectEnvEntity {
     default: ''
   })
   env_name: string;
+
+  @Column({
+    type: 'varchar',
+    length: 255,
+    default: ''
+  })
+  branch: string;
 
   @Column({
     type: 'int',
@@ -55,10 +85,15 @@ export class ProjectEnvEntity {
   })
   deleted_at: number;
 
+  @OneToMany((type) => ProjectTaskEntity, (ProjectTaskEntity) => ProjectTaskEntity.project_env)
+  tasks: ProjectTaskEntityStatus[];
+
   @ManyToOne((type) => ProjectEntity, (ProjectEntity) => ProjectEntity.list)
+  @JoinColumn({ name: 'project_id' })
   project: ProjectEntity;
 
   @ManyToOne((type) => SSHEntity, (SSHEntity) => SSHEntity.ssh_id)
+  @JoinColumn({ name: 'ssh_id' })
   ssh: SSHEntity;
 
 }

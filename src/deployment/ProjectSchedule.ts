@@ -9,6 +9,8 @@ import {
   ProjectTaskEntityStatus,
 } from '../modules/project/entities/project_task.entity';
 import dayjs from 'dayjs';
+import { SSHEntity } from '../modules/project/entities/ssh.entity';
+import { ProjectEnvEntity } from '../modules/project/entities/project_env.entity';
 
 @Injectable()
 export class ProjectSchedule {
@@ -16,32 +18,50 @@ export class ProjectSchedule {
   private taskBuildQueue: ProjectTaskEntity[] = [];
   private maxLimit: number = 2;
   constructor(
-    @InjectRepository(ProjectEntity)
-    private readonly pj: Repository<ProjectEntity>,
-    @InjectRepository(ProjectTaskEntity)
-    private readonly pt: Repository<ProjectTaskEntity>,
-    @InjectRepository(ProjectEntity)
-    private readonly ps: Repository<ProjectEntity>,
-  ) {}
+    @InjectRepository(ProjectEntity) private readonly pj: Repository<ProjectEntity>,
+    @InjectRepository(ProjectEnvEntity) private readonly pje: Repository<ProjectEnvEntity>,
+    @InjectRepository(ProjectTaskEntity) private readonly pt: Repository<ProjectTaskEntity>,
+    @InjectRepository(SSHEntity) private readonly ssh: Repository<SSHEntity>,
+  ) { }
 
   async createTask(dto: CreatePushMergePRDTO) {
-    const project = await this.ps.findOne({
+    const branch = dto.ref.replace(/refs\/heads\/(\w+)/, '$1');
+    const project = await this.pj.findOne({
       repository_name: dto.repository.name,
       deleted_at: 0,
     });
 
     if (!project) {
-      throw new NotAcceptableException('no project');
+      throw new NotAcceptableException('该项目没有配置构建');
     }
 
+    const env = await this.pje.findOne({
+      where: {
+        project_id: project.project_id,
+        deleted_at: 0,
+        branch
+      },
+      relations: ['ssh']
+    });
+
+    if (!env) {
+      throw new NotAcceptableException('该分支没有配置构建');
+    }
+
+    env.project = project;
+
+    const user_id = 1;
+
     const newTask = this.pt.create();
+    newTask.user_id = user_id;
     newTask.repository = dto.repository.name;
-    newTask.branch = dto.ref.replace(/refs\/heads\/(\w+)/, '$1');
+    newTask.branch = branch;
     newTask.commit = dto.commits[0].message;
     newTask.version = dto.after;
     newTask.created_at = dayjs().unix();
     newTask.updated_at = dayjs().unix();
-    newTask.project = project;
+    newTask.project_env_id = env.project_env_id;
+    newTask.project_env = env;
     await this.pt.save(newTask);
     this.taskQueue.push(newTask);
     this.beginTasks();

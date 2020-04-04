@@ -1,55 +1,24 @@
-// import { NestFactory } from '@nestjs/core';
-// import { AppModule } from './app.module';
-// import { ValidationPipe } from '@nestjs/common';
-// import { mkdir } from './utils/util';
-// import { DEPLOYMENT_DIR, REPOSITORY_DIR } from './constant';
+import { NestFactory } from '@nestjs/core';
+import { AppModule } from './app.module';
+import { ValidationPipe } from '@nestjs/common';
+import { mkdir } from './utils/util';
+import { DEPLOYMENT_DIR, REPOSITORY_DIR } from './constant';
 
-// // import { ProjectTask } from "./deployment/ProjectTask";
+// import { ProjectTask } from "./deployment/ProjectTask";
 
-// async function bootstrap() {
-//   try {
-//     const app = await NestFactory.create(AppModule);
-//     app.useGlobalPipes(new ValidationPipe());
-
-//     Promise.all([
-//       mkdir(DEPLOYMENT_DIR),
-//       mkdir(REPOSITORY_DIR),
-//       app.listen(7000)
-//     ])
-//   } catch (error) {
-//     console.log(error)
-//   }
-
-// }
-// bootstrap();
-
-import { Client } from 'ssh2';
-import { getSSHInstance } from './utils/ssh';
-
-async function run() {
+async function bootstrap() {
   try {
-    const conn = await getSSHInstance({
-      host: '',
-      port: 22,
-      username: 'root',
-      password: ''
-      // privateKey: require('fs').readFileSync('/here/is/my/key')
-    })
-    // const stream = await conn.execComand('cd /usr/web && ls');
+    const app = await NestFactory.create(AppModule);
+    app.useGlobalPipes(new ValidationPipe());
 
-    // stream.on('data', function (data: any) {
-    //   console.log('STDOUT: ' + data);
-    // }).stderr.on('data', function (data) {
-    //   console.log('STDERR: ' + data);
-    // });
-
-    // await conn.downloadFile('/Users/ch.mao/Desktop/practice/oma/test/1585904719937_ssh.tar.gz', '/tmp/1585904719937_ssh.tar.gz');
-    await conn.upload('/Users/ch.mao/Desktop/practice/oma/test', '/usr/web/oma/src');
-    conn.end()
+    Promise.all([
+      mkdir(DEPLOYMENT_DIR),
+      mkdir(REPOSITORY_DIR),
+      app.listen(7000)
+    ])
   } catch (error) {
     console.log(error)
   }
 
 }
-
-run();
+bootstrap();

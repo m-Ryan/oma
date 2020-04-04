@@ -1,10 +1,11 @@
+import { IsString, IsInt } from 'class-validator';
+import { CreateProjectEnvDto } from './create-project-env';
+
 export class CreateProjectDto {
+  @IsString()
   readonly name: string;
+  @IsString()
   readonly git_path: string;
-  readonly envs: {
-    name: string;
-    public_path: string;
-    env_name: string;
-    ssh_id?: number;
-  }[]
+  readonly envs: CreateProjectEnvDto[]
 }
+

@@ -1,7 +1,7 @@
 // import { ProjectEntity } from "../modules/project/entities/project.entity";
 import { runExec } from '../utils/shell';
 import path from 'path';
-import shelljs from 'shelljs';
+import shelljs, { env } from 'shelljs';
 import { ProjectTaskEntity } from '../modules/project/entities/project_task.entity';
 import {
   getTaskDir,
@@ -12,6 +12,10 @@ import {
   getTaskId,
 } from '../utils/util';
 import { REPOSITORY_DIR, DEPLOYMENT_DIR, MAX_HISTORY_LIMIT } from '../constant';
+import { getSSHInstance } from '../utils/ssh';
+import { SSHEntity, SSHType } from '../modules/project/entities/ssh.entity';
+import chalk from 'chalk';
+import { decrypt } from '../utils/crypto';
 
 /**
  * 假设分三个环境 master，dev，test
@@ -25,8 +29,7 @@ export async function createBuildPipline(options: {
   onSuccess: () => void;
   onError: (error: string) => void;
 }) {
-  const { task, onError, onSuccess, onProgress } = options;
-  const project = task.project;
+  const { task, task: { project_env, project_env: { project, ssh } }, onError, onSuccess, onProgress } = options;
   const projectDir = getRepositoryName(project.git_path);
   const repositoryPath = path.resolve(REPOSITORY_DIR, projectDir);
   const deploymentDir = path.resolve(DEPLOYMENT_DIR, projectDir);
@@ -49,18 +52,27 @@ export async function createBuildPipline(options: {
       cwd: repositoryPath,
     });
 
-    // const removeDirs = await readdir(deploymentDir).then(files => {
-    //   return files
-    //     .sort((a: string, b: string) =>
-    //       getTaskId(b) - getTaskId(a) > 0 ? 1 : -1,
-    //     )
-    //     .filter((item, index) => index >= MAX_HISTORY_LIMIT - 1)
-    //     .map(file => path.resolve(deploymentDir, file));
-    // });
-    // shelljs.rm('-rf', ...removeDirs);
-    shelljs.cp('-f', `${repositoryPath}/build`, deploymentPath);
+    // push to server 
+
+    const connectOptions: Partial<SSHEntity> = {
+      host: ssh.host,
+      port: ssh.port,
+      username: ssh.username,
+    }
+    if (ssh.type === SSHType.PWD) {
+      connectOptions.password = decrypt(ssh.password);
+    } else {
+      connectOptions.privateKey = decrypt(ssh.privateKey);
+    }
+    console.log(chalk.yellow('正在进行服务器连接----'));
+    const conn = await getSSHInstance(connectOptions);
+    console.log(chalk.yellow('正在进行上传到服务器----'));
+    await conn.upload(DEPLOYMENT_DIR, project_env.public_path);
+    conn.end()
+
     onSuccess();
   } catch (error) {
+    console.log(error)
     onError(error.message || error.toString());
   }
 }

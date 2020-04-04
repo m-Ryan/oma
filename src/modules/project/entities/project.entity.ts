@@ -11,6 +11,7 @@ import {
 
 import { ProjectEnvEntity } from './project_env.entity';
 import { ProjectTaskEntity } from './project_task.entity';
+import { ProjectGroupEntity } from './project_group.entity';
 
 
 @Entity('project')
@@ -74,7 +75,7 @@ export class ProjectEntity {
   @OneToMany((type) => ProjectEnvEntity, (ProjectEnvEntity) => ProjectEnvEntity.project)
   list: ProjectEnvEntity[];
 
-  @OneToMany((type) => ProjectTaskEntity, (ProjectTaskEntity) => ProjectTaskEntity.project)
-  tasks: ProjectTaskEntity[];
+  @OneToOne((type) => ProjectGroupEntity, (ProjectGroupEntity) => ProjectGroupEntity.project)
+  group: ProjectGroupEntity;
 
 }

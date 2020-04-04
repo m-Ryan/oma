@@ -5,7 +5,7 @@ import {
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
-import { ProjectEntity } from './project.entity';
+import { ProjectEnvEntity } from './project_env.entity';
 
 export enum ProjectTaskEntityStatus {
   PENDING = 0,
@@ -21,7 +21,19 @@ export class ProjectTaskEntity {
   @Column({
     type: 'int',
   })
-  project_id: number;
+  project_env_id: number;
+
+  @Column({
+    type: 'int',
+    default: 0
+  })
+  user_id: number;
+
+  @Column({
+    type: 'int',
+    default: 0
+  })
+  ssh_id: number;
 
   @Column({
     type: 'varchar',
@@ -82,9 +94,10 @@ export class ProjectTaskEntity {
   deleted_at: number;
 
   @ManyToOne(
-    type => ProjectEntity,
-    ProjectEntity => ProjectEntity.project_id,
+    type => ProjectEnvEntity,
+    ProjectEnvEntity => ProjectEnvEntity.project_env_id,
   )
-  @JoinColumn({ name: 'project_id' })
-  project: ProjectEntity;
+  @JoinColumn({ name: 'project_env_id' })
+  project_env: ProjectEnvEntity;
+
 }
