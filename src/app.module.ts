@@ -1,8 +1,9 @@
-import { Module } from '@nestjs/common';
+import { Module, MiddlewareConsumer } from '@nestjs/common';
 import { DeploymentCModule } from './modules/project/project.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { isProduction, cwd } from './utils/util';
 import { UserModule } from './modules/user/user.module';
+import { UserAuthorizeMiddleware } from './common/middleware/user.authorize.middleware';
 
 
 const mysqlConfigPath = isProduction() ? cwd + '/config/mysql.orm.pro.json' : cwd + '/config/mysql.orm.dev.json';
@@ -19,7 +20,7 @@ const ormConfig = require(mysqlConfigPath);
   providers: [],
 })
 export class AppModule {
-  constructor() {
-    console.log('init ')
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(UserAuthorizeMiddleware).forRoutes('');
   }
 }
