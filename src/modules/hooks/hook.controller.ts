@@ -4,7 +4,7 @@ import { AuthGuard } from '../../common/guards/auth.guard';
 import { HookService } from './hook.services';
 
 @UseGuards(AuthGuard)
-@Controller('deployment')
+@Controller('hook')
 export class HookController {
   constructor(
     private readonly service: HookService,
