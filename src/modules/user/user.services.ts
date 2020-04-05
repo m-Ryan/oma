@@ -1,10 +1,12 @@
-import { Injectable } from '@nestjs/common';
-import { ProjectSchedule } from 'src/src/deployment/ProjectSchedule';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { UserEntity } from './entities/user.entity';
+import { Repository, getManager } from 'typeorm';
+import { UserEntity, UserRole } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
-import { encodePassword } from 'src/src/utils/crypto';
+import { UserPasswordEntity } from './entities/user_password.entity';
+import { encodePassword } from '../../utils/crypto';
+import { jwtSign } from '../../utils/jwt';
+import { LoginDto } from './dto/login.dto';
 
 
 @Injectable()
@@ -17,10 +19,51 @@ export class UserService {
   }
 
   createUser(dto: CreateUserDto) {
-    const user = this.user.create();
-    user.name = dto.name;
-    user.password = encodePassword(dto.password);
-    return this.user.save(user);
+
+    return getManager().transaction(async transactionalEntityManager => {
+      const user = transactionalEntityManager.create(UserEntity);
+      user.nickname = dto.nickname;
+      user.token = '';
+      user.role = UserRole.ADMIN;
+      await transactionalEntityManager.save(user);
+
+      user.token = jwtSign({
+        user_id: user.user_id,
+        nickname: user.nickname,
+        role: user.role,
+      });
+      await transactionalEntityManager.save(user);
+
+      const password = transactionalEntityManager.create(UserPasswordEntity);
+      password.user_id = user.user_id;
+      password.password = encodePassword(dto.password);
+      await transactionalEntityManager.save(password);
+      return user;
+    })
+  }
+
+  async login(dto: LoginDto) {
+    const user = await this.user.findOne({
+      where: {
+        nickname: dto.nickname,
+        password: encodePassword(dto.password),
+        deleted_at: 0
+      }
+    });
+
+    if (!user) {
+      throw new BadRequestException('用户名或密码错误');
+    }
+
+    user.token = jwtSign({
+      user_id: user.user_id,
+      nickname: user.nickname,
+      role: user.role,
+    });
+
+    await this.user.save(user);
+
+    return user;
   }
 
 }

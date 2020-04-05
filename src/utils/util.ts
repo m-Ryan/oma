@@ -15,7 +15,7 @@ export function isProduction() {
 }
 
 export function delay(time = 1000) {
-	return new Promise(resolve=>setTimeout(resolve, time))
+	return new Promise(resolve => setTimeout(resolve, time))
 }
 
 export async function mkdir(dirname: string) {
@@ -35,8 +35,8 @@ export function getNowTimeStamp() {
 	return dayjs().unix();
 }
 
-export function getTaskDir(task: ProjectTaskEntity) {
-	return dayjs(task.created_at * 1000).format('YYYY-MM-DD-t') + task.task_id;
+export function getTaskTarName(task: ProjectTaskEntity) {
+	return dayjs(task.created_at * 1000).format('YYYY-MM-DD-t') + task.task_id + '.tar.gz';
 }
 
 export function getTaskId(dirname: string) {

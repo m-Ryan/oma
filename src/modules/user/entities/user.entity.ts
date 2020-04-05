@@ -1,8 +1,10 @@
 import {
   Entity,
   Column,
-  PrimaryGeneratedColumn
+  PrimaryGeneratedColumn,
+  OneToOne
 } from 'typeorm';
+import { UserPasswordEntity } from './user_password.entity';
 
 
 export enum UserRole {
@@ -21,7 +23,7 @@ export class UserEntity {
     type: 'varchar',
     default: ''
   })
-  name: string;
+  nickname: string;
 
   @Column({
     type: 'varchar',
@@ -39,19 +41,7 @@ export class UserEntity {
     type: 'varchar',
     default: ''
   })
-  username: string;
-
-  @Column({
-    type: 'varchar',
-    default: ''
-  })
-  password: string;
-
-  @Column({
-    type: 'varchar',
-    default: ''
-  })
-  privateKey: string;
+  token: string;
 
   @Column({
     type: 'int',
@@ -70,5 +60,8 @@ export class UserEntity {
     default: 0
   })
   deleted_at: number;
+
+  @OneToOne((type) => UserPasswordEntity, (UserPasswordEntity) => UserPasswordEntity.user)
+  password: UserPasswordEntity;
 
 }
