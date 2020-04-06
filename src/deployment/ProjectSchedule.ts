@@ -50,10 +50,7 @@ export class ProjectSchedule {
 
     env.project = project;
 
-    const user_id = 1;
-
     const newTask = this.pt.create();
-    newTask.user_id = user_id;
     newTask.repository = dto.repository.name;
     newTask.branch = branch;
     newTask.commit = dto.commits[0].message;

@@ -1,4 +1,5 @@
 {
+  "node": "12.16.0",
   "stages": {
     "start": "yarn install",
     "build": "yarn build",

@@ -24,9 +24,15 @@ RUN source $NVM_DIR/nvm.sh \
 ENV NODE_PATH $NVM_DIR/v$NODE_VERSION/lib/node_modules
 ENV PATH $NVM_DIR/versions/node/v$NODE_VERSION/bin:$PATH
 
+# use registry
+RUN npm config set registry https://registry.npm.taobao.org
+
+# install yarn 
+RUN npm install -g yarn
+
 WORKDIR /usr/src/oma
 COPY package.json .
-RUN npm install
+RUN yarn
 
 EXPOSE 7000
 CMD [ "npm", "start" ]

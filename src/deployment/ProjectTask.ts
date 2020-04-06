@@ -13,6 +13,67 @@ import { getSSHInstance } from '../utils/ssh';
 import { SSHEntity, SSHType } from '../modules/project/entities/ssh.entity';
 import chalk from 'chalk';
 import { decrypt } from '../utils/crypto';
+import { exec } from 'shelljs';
+
+export class Pipline {
+  private task: ProjectTaskEntity;
+  constructor(task: ProjectTaskEntity) {
+    this.task = task;
+  }
+
+  async runTask() {
+    await this.fetch();
+    await this.build();
+    await this.deploy();
+  }
+
+  async fetch() {
+    const branch = this.task.branch;
+    await exec(`git fetch --no-tags --force --progress`);
+    await exec(`git checkout -f ${branch}`);
+
+    `
+   Fetching upstream changes from https://github.com/m-Ryan/building-a-multibranch-pipeline-project.git
+
+ > git --version # timeout=10
+
+ > git fetch --no-tags --force --progress -- https://github.com/m-Ryan/building-a-multibranch-pipeline-project.git +refs/heads/master:refs/remotes/origin/master # timeout=10
+
+ > git config remote.origin.url https://github.com/m-Ryan/building-a-multibranch-pipeline-project.git # timeout=10
+
+ > git config --add remote.origin.fetch +refs/heads/master:refs/remotes/origin/master # timeout=10
+
+ > git config remote.origin.url https://github.com/m-Ryan/building-a-multibranch-pipeline-project.git # timeout=10
+
+Fetching without tags
+
+Fetching upstream changes from https://github.com/m-Ryan/building-a-multibranch-pipeline-project.git
+
+ > git fetch --no-tags --force --progress -- https://github.com/m-Ryan/building-a-multibranch-pipeline-project.git +refs/heads/master:refs/remotes/origin/master # timeout=10
+
+Checking out Revision e486ee40486bab10fe0af1c0ebafc5a19fd50fe4 (master)
+
+ > git config core.sparsecheckout # timeout=10
+
+ > git checkout -f e486ee40486bab10fe0af1c0ebafc5a19fd50fe4 # timeout=10
+
+Commit message: "Amend README.md"
+
+First time build. Skipping changelog.
+
+ > git --version # timeout=10
+   `
+  }
+
+  build() {
+
+  }
+
+  deploy() {
+
+  }
+
+}
 
 export async function createBuildPipline(options: {
   task: ProjectTaskEntity;

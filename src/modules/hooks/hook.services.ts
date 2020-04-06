@@ -3,15 +3,10 @@ import { ProjectEntity } from './entities/project.entity';
 import { Repository, getManager } from 'typeorm';
 import { CreatePushMergePRDTO } from './dto/push-merge.pr.dto';
 import { ProjectTaskEntity } from './entities/project_task.entity';
-import { ProjectGroupEntity } from './entities/project_group.entity';
-import { ProjectGroupMemberEntity, GroupMemberRole } from './entities/project_group_member.entity';
 import { SSHEntity, SSHType } from './entities/ssh.entity';
 import { ProjectEnvEntity } from './entities/project_env.entity';
 import { ProjectSchedule } from '../../deployment/ProjectSchedule';
-import { getNowTimeStamp, getRepositoryName } from '../../utils/util';
-import { encrypt } from '../../utils/crypto';
-import { NotAcceptableException, Injectable } from '@nestjs/common';
-
+import { Injectable } from '@nestjs/common';
 
 @Injectable()
 export class HookService {
