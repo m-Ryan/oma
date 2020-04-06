@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, UseGuards, Headers } from '@nestjs/common';
 import { DeploymentService } from './project.services';
 import { CreatePushMergePRDTO } from './dto/push-merge.pr.dto';
 import { CreateProjectDto } from './dto/create-project.dto';
@@ -15,8 +15,8 @@ export class DeploymentController {
 
 
   @Post('create-project')
-  findAll(@Body() dto: CreateProjectDto) {
-    return this.service.createProject(dto);
+  findAll(@Body() dto: CreateProjectDto, @Headers('user_id') userId: number) {
+    return this.service.createProject(dto, userId);
   }
 
   @Post('push')

@@ -14,8 +14,9 @@ import { ProjectSchedule } from '../../deployment/ProjectSchedule';
 import { getNowTimeStamp, getRepositoryName, existsDir } from '../../utils/util';
 import { encrypt } from '../../utils/crypto';
 import { NotAcceptableException, Injectable } from '@nestjs/common';
-import fs from 'fs-extra';
+import path from 'path';
 import { runExec } from '../../utils/shell';
+import { REPOSITORY_DIR } from '../../constant';
 
 @Injectable()
 export class DeploymentService {
@@ -30,28 +31,27 @@ export class DeploymentService {
 
   }
 
-  async createProject(dto: CreateProjectDto) {
-    const user_id = 1;
+  async createProject(dto: CreateProjectDto, userId: number) {
     return getManager().transaction(async transactionalEntityManager => {
       const project = await this.pj.findOne({
         git_path: dto.git_path
       })
-      if (project) {
-        throw new NotAcceptableException('该项目已存在，创建失败');
-      }
+      // if (project) {
+      //   throw new NotAcceptableException('该项目已存在，创建失败');
+      // }
 
       const repositoryName = getRepositoryName(dto.git_path);
-
       if (!(await existsDir(repositoryName))) {
-        await runExec(`git clone ${project.git_path} ${repositoryName}`);
+        await runExec(`git clone ${dto.git_path} ${repositoryName}`, {
+          cwd: REPOSITORY_DIR
+        });
       } else {
         throw new NotAcceptableException('已有同名项目');
       }
-
       const now = getNowTimeStamp();
       // crate project
       const newProject = transactionalEntityManager.create(ProjectEntity);
-      newProject.user_id = user_id;
+      newProject.user_id = userId;
       newProject.name = dto.name;
       newProject.repository_name = repositoryName;
       newProject.git_path = dto.git_path;
@@ -62,7 +62,7 @@ export class DeploymentService {
       // create group
       const group = transactionalEntityManager.create(ProjectGroupEntity);
       group.project_id = newProject.project_id;
-      group.owner_id = user_id;
+      group.owner_id = userId;
       group.created_at = now;
       group.updated_at = now;
       await transactionalEntityManager.save(group);
@@ -71,7 +71,7 @@ export class DeploymentService {
 
       const member = transactionalEntityManager.create(ProjectGroupMemberEntity);
       member.role = GroupMemberRole.OWNER;
-      member.user_id = user_id;
+      member.user_id = userId;
       member.created_at = now;
       member.updated_at = now;
       member.group_id = group.group_id;

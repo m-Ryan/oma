@@ -1,5 +1,3 @@
-// import { ProjectEntity } from "../modules/project/entities/project.entity";
-import { runExec } from '../utils/shell';
 import path from 'path';
 import { ProjectTaskEntity } from '../modules/project/entities/project_task.entity';
 import {
@@ -8,13 +6,14 @@ import {
   getRepositoryName,
   mkdir,
 } from '../utils/util';
-import { REPOSITORY_DIR, DEPLOYMENT_DIR, MAX_HISTORY_LIMIT } from '../constant';
+import { REPOSITORY_DIR, DEPLOYMENT_DIR } from '../constant';
 import { getSSHInstance } from '../utils/ssh';
 import { SSHEntity, SSHType } from '../modules/project/entities/ssh.entity';
 import chalk from 'chalk';
 import { decrypt } from '../utils/crypto';
 import { Omafile } from '../typing/omafile';
 import fs from 'fs-extra';
+import shelljs from 'shelljs';
 
 export async function createBuildPipline(options: {
   task: ProjectTaskEntity;
@@ -22,16 +21,24 @@ export async function createBuildPipline(options: {
   onSuccess: () => void;
   onError: (error: string) => void;
 }) {
-  const { task, task: { project_env, project_env: { project, ssh } }, onError, onSuccess, onProgress } = options;
+  const { task, task: { project_env, project_env: { project, ssh } }, onError, onSuccess } = options;
   const projectDir = getRepositoryName(project.git_path);
-  const omafile: Omafile = await fs.readJSON(path.join(projectDir, 'omafile.json'));
-  const repositoryPath = path.resolve(REPOSITORY_DIR, projectDir);
-  const deploymentDir = path.resolve(DEPLOYMENT_DIR, projectDir);
-
+  const repositoryPath = path.join(REPOSITORY_DIR, projectDir);
+  const deploymentDir = path.join(DEPLOYMENT_DIR, projectDir);
   try {
     // stage fetch
-    await runExec(`git fetch --no-tags --force --progress`);
-    await runExec(`git checkout -f ${this.task.version}`);
+    shelljs.cd(repositoryPath);
+    shelljs.exec(`git fetch --no-tags --force --progress`);
+    shelljs.exec(`git checkout -f ${task.version}`);
+    let omafile: Omafile;
+    try {
+      omafile = await fs.readJSON(path.join(repositoryPath, 'omafile.json'));
+    } catch (error) {
+      console.log(error)
+      onError('该项目没有配置 omafile.json');
+    }
+    if (!omafile) return;
+
     await runStage(omafile.stages.fetch, repositoryPath);
 
     // stage build 
@@ -42,7 +49,7 @@ export async function createBuildPipline(options: {
 
     // 打包
     const tarName = getTaskTarName(task);
-    await runExec(`cd ${deploymentDir} && tar -zcf ${tarName} -C ${path.resolve(repositoryPath, omafile.uploadDir)} .`);
+    shelljs.exec(`cd ${deploymentDir} && tar -zcf ${tarName} -C ${path.join(repositoryPath, omafile.uploadDir)} .`);
 
     // push to server 
     const connectOptions: Partial<SSHEntity> = {
@@ -67,9 +74,9 @@ export async function createBuildPipline(options: {
         // 打包成临时文件
         const tarPath = path.resolve(deploymentDir, tarName);
         const tempPath = '/tmp/' + tarName;
-        console.log('正在上传');
+        console.log('正在上传', tempPath);
         await conn.uploadFile(tarPath, tempPath);
-        await conn.execComand(`rm -rf ${project_env.public_path} && mkdir ${project_env.public_path}`);
+        await conn.execComand(`rm -rf ${project_env.public_path} && mkdir -p ${project_env.public_path}`);
         console.log('正在解压');
         await conn.execComand(`tar -zxPf ${tempPath} -C ${project_env.public_path}`);
         await conn.execComand(`rm -rf ${tempPath}`);
@@ -81,7 +88,9 @@ export async function createBuildPipline(options: {
       }
     })
 
-    conn.end()
+    conn.end();
+
+    shelljs.exec(`git checkout -f ${task.version}`);
 
     onSuccess();
   } catch (error) {
@@ -92,15 +101,12 @@ export async function createBuildPipline(options: {
 
 
 async function runStage(stage: string | string[], cwd: string) {
+  shelljs.cd(cwd);
   if (Array.isArray(stage)) {
     for await (const step of stage) {
-      await runExec(step, {
-        cwd
-      })
+      shelljs.exec(step);
     }
   } else {
-    await runExec(stage, {
-      cwd
-    })
+    shelljs.exec(stage);
   }
 }

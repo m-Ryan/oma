@@ -5,6 +5,7 @@ import { isProduction, cwd } from './utils/util';
 import { UserModule } from './modules/user/user.module';
 import { UserAuthorizeMiddleware } from './common/middleware/user.authorize.middleware';
 import { HookModule } from './modules/hooks/hook.module';
+import { AppController } from './app.controller';
 
 
 const mysqlConfigPath = isProduction() ? cwd + '/config/mysql.orm.pro.json' : cwd + '/config/mysql.orm.dev.json';
@@ -18,7 +19,7 @@ const ormConfig = require(mysqlConfigPath);
     UserModule,
     HookModule
   ],
-  controllers: [],
+  controllers: [AppController],
   providers: [],
 })
 export class AppModule {

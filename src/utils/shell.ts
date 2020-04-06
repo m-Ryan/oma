@@ -11,16 +11,18 @@ export function runExec(command: string, options: {
       shelljs.cd(cwd);
     }
     const child = shelljs.exec(command, { async: true, silent: true });
-    console.log(chalk.yellow(command));
+    console.log(chalk.yellow(command), `cwd ${cwd}`);
     child.stdout.on('data', function (data) {
       console.log(chalk.blue(`${data}`));
       onProgress && onProgress(data)
     });
     child.stdout.on('end', function () {
+      console.log('end')
       resolve();
     });
-    child.stdout.on('error', function (data) {
-      reject(data);
+    child.stdout.on('error', function (error) {
+      console.log('error', error)
+      reject(error);
     });
   })
 }

@@ -15,7 +15,6 @@ export class UserAuthorizeMiddleware implements NestMiddleware {
         const user = jwtVerify(token);
         req.headers.user_id = user.user_id.toString();
         req.headers.user_role = user.role.toString();
-        next();
       } catch (error) { }
     }
     next();
