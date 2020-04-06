@@ -91,7 +91,7 @@ export async function createBuildPipline(options: {
     conn.end();
 
     // clean
-    shelljs.exec(`git checkout -f master && git branch -D test`);
+    shelljs.exec(`git checkout -f master && git branch -D ${task.version}`);
 
     onSuccess();
   } catch (error) {
