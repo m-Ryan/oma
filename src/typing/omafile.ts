@@ -1,2 +1,10 @@
-export interface Omafile { node: string; stages: IStages; }
-interface IStages { start?: string; build?: string; deploy?: string; }
+export interface Omafile {
+  node: string;
+  stages: IStages;
+  uploadDir: string;
+}
+interface IStages {
+  fetch?: string | string[];
+  build?: string | string[];
+  deploy?: string | string[];
+}

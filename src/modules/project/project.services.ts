@@ -11,10 +11,11 @@ import { SSHEntity, SSHType } from './entities/ssh.entity';
 import { CreateProjectEnvDto } from './dto/create-project-env';
 import { ProjectEnvEntity } from './entities/project_env.entity';
 import { ProjectSchedule } from '../../deployment/ProjectSchedule';
-import { getNowTimeStamp, getRepositoryName } from '../../utils/util';
+import { getNowTimeStamp, getRepositoryName, existsDir } from '../../utils/util';
 import { encrypt } from '../../utils/crypto';
 import { NotAcceptableException, Injectable } from '@nestjs/common';
-
+import fs from 'fs-extra';
+import { runExec } from '../../utils/shell';
 
 @Injectable()
 export class DeploymentService {
@@ -33,10 +34,18 @@ export class DeploymentService {
     const user_id = 1;
     return getManager().transaction(async transactionalEntityManager => {
       const project = await this.pj.findOne({
-        name: dto.name
+        git_path: dto.git_path
       })
       if (project) {
-        throw new NotAcceptableException('已有同名项目')
+        throw new NotAcceptableException('该项目已存在，创建失败');
+      }
+
+      const repositoryName = getRepositoryName(dto.git_path);
+
+      if (!(await existsDir(repositoryName))) {
+        await runExec(`git clone ${project.git_path} ${repositoryName}`);
+      } else {
+        throw new NotAcceptableException('已有同名项目');
       }
 
       const now = getNowTimeStamp();
@@ -44,7 +53,7 @@ export class DeploymentService {
       const newProject = transactionalEntityManager.create(ProjectEntity);
       newProject.user_id = user_id;
       newProject.name = dto.name;
-      newProject.repository_name = getRepositoryName(dto.git_path);
+      newProject.repository_name = repositoryName;
       newProject.git_path = dto.git_path;
       newProject.created_at = now;
       newProject.updated_at = now;

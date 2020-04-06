@@ -13,67 +13,8 @@ import { getSSHInstance } from '../utils/ssh';
 import { SSHEntity, SSHType } from '../modules/project/entities/ssh.entity';
 import chalk from 'chalk';
 import { decrypt } from '../utils/crypto';
-import { exec } from 'shelljs';
-
-export class Pipline {
-  private task: ProjectTaskEntity;
-  constructor(task: ProjectTaskEntity) {
-    this.task = task;
-  }
-
-  async runTask() {
-    await this.fetch();
-    await this.build();
-    await this.deploy();
-  }
-
-  async fetch() {
-    const branch = this.task.branch;
-    await exec(`git fetch --no-tags --force --progress`);
-    await exec(`git checkout -f ${branch}`);
-
-    `
-   Fetching upstream changes from https://github.com/m-Ryan/building-a-multibranch-pipeline-project.git
-
- > git --version # timeout=10
-
- > git fetch --no-tags --force --progress -- https://github.com/m-Ryan/building-a-multibranch-pipeline-project.git +refs/heads/master:refs/remotes/origin/master # timeout=10
-
- > git config remote.origin.url https://github.com/m-Ryan/building-a-multibranch-pipeline-project.git # timeout=10
-
- > git config --add remote.origin.fetch +refs/heads/master:refs/remotes/origin/master # timeout=10
-
- > git config remote.origin.url https://github.com/m-Ryan/building-a-multibranch-pipeline-project.git # timeout=10
-
-Fetching without tags
-
-Fetching upstream changes from https://github.com/m-Ryan/building-a-multibranch-pipeline-project.git
-
- > git fetch --no-tags --force --progress -- https://github.com/m-Ryan/building-a-multibranch-pipeline-project.git +refs/heads/master:refs/remotes/origin/master # timeout=10
-
-Checking out Revision e486ee40486bab10fe0af1c0ebafc5a19fd50fe4 (master)
-
- > git config core.sparsecheckout # timeout=10
-
- > git checkout -f e486ee40486bab10fe0af1c0ebafc5a19fd50fe4 # timeout=10
-
-Commit message: "Amend README.md"
-
-First time build. Skipping changelog.
-
- > git --version # timeout=10
-   `
-  }
-
-  build() {
-
-  }
-
-  deploy() {
-
-  }
-
-}
+import { Omafile } from '../typing/omafile';
+import fs from 'fs-extra';
 
 export async function createBuildPipline(options: {
   task: ProjectTaskEntity;
@@ -83,34 +24,25 @@ export async function createBuildPipline(options: {
 }) {
   const { task, task: { project_env, project_env: { project, ssh } }, onError, onSuccess, onProgress } = options;
   const projectDir = getRepositoryName(project.git_path);
+  const omafile: Omafile = await fs.readJSON(path.join(projectDir, 'omafile.json'));
   const repositoryPath = path.resolve(REPOSITORY_DIR, projectDir);
   const deploymentDir = path.resolve(DEPLOYMENT_DIR, projectDir);
 
   try {
-    if (!(await existsDir(repositoryPath))) {
-      await runExec(`git clone ${project.git_path} ${repositoryPath}`, {
-        onProgress,
-      });
-    }
+    // stage fetch
+    await runExec(`git fetch --no-tags --force --progress`);
+    await runExec(`git checkout -f ${this.task.version}`);
+    await runStage(omafile.stages.fetch, repositoryPath);
 
-    await runExec(`yarn install`, {
-      onProgress,
-      cwd: repositoryPath,
-    });
-
-    await runExec(`yarn build`, {
-      onProgress,
-      cwd: repositoryPath,
-    });
-
+    // stage build 
+    await runStage(omafile.stages.build, repositoryPath);
     if (!(await existsDir(deploymentDir))) {
       await mkdir(deploymentDir);
-
     }
 
     // 打包
     const tarName = getTaskTarName(task);
-    await runExec(`cd ${deploymentDir} && tar -zcf ${tarName} -C ${repositoryPath}/build .`);
+    await runExec(`cd ${deploymentDir} && tar -zcf ${tarName} -C ${path.resolve(repositoryPath, omafile.uploadDir)} .`);
 
     // push to server 
     const connectOptions: Partial<SSHEntity> = {
@@ -155,5 +87,20 @@ export async function createBuildPipline(options: {
   } catch (error) {
     console.log(error)
     onError(error.message || error.toString());
+  }
+}
+
+
+async function runStage(stage: string | string[], cwd: string) {
+  if (Array.isArray(stage)) {
+    for await (const step of stage) {
+      await runExec(step, {
+        cwd
+      })
+    }
+  } else {
+    await runExec(stage, {
+      cwd
+    })
   }
 }
