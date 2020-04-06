@@ -14,9 +14,8 @@ import { ProjectSchedule } from '../../deployment/ProjectSchedule';
 import { getNowTimeStamp, getRepositoryName, existsDir } from '../../utils/util';
 import { encrypt } from '../../utils/crypto';
 import { NotAcceptableException, Injectable } from '@nestjs/common';
-import path from 'path';
-import { runExec } from '../../utils/shell';
 import { REPOSITORY_DIR } from '../../constant';
+import shelljs from 'shelljs';
 
 @Injectable()
 export class DeploymentService {
@@ -35,16 +34,14 @@ export class DeploymentService {
     return getManager().transaction(async transactionalEntityManager => {
       const project = await this.pj.findOne({
         git_path: dto.git_path
-      })
-      // if (project) {
-      //   throw new NotAcceptableException('该项目已存在，创建失败');
-      // }
+      });
+      if (project) {
+        throw new NotAcceptableException('该项目已存在，创建失败');
+      }
 
       const repositoryName = getRepositoryName(dto.git_path);
       if (!(await existsDir(repositoryName))) {
-        await runExec(`git clone ${dto.git_path} ${repositoryName}`, {
-          cwd: REPOSITORY_DIR
-        });
+        shelljs.exec(`cd ${REPOSITORY_DIR} && git clone ${dto.git_path} ${repositoryName}`);
       } else {
         throw new NotAcceptableException('已有同名项目');
       }
@@ -68,7 +65,6 @@ export class DeploymentService {
       await transactionalEntityManager.save(group);
 
       // create member
-
       const member = transactionalEntityManager.create(ProjectGroupMemberEntity);
       member.role = GroupMemberRole.OWNER;
       member.user_id = userId;
@@ -126,7 +122,7 @@ export class DeploymentService {
 
     await this.ps.createTask(dto);
 
-    return { message: 'success' }
+    return { message: 'success' };
   }
 
 }

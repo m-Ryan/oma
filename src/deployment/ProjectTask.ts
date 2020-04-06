@@ -42,10 +42,12 @@ export async function createBuildPipline(options: {
     await runStage(omafile.stages.fetch, repositoryPath);
 
     // stage build 
-    await runStage(omafile.stages.build, repositoryPath);
     if (!(await existsDir(deploymentDir))) {
       await mkdir(deploymentDir);
     }
+
+    shelljs.exec(`nvm install ${omafile.node} && nvm use ${omafile.node}`);
+    await runStage(omafile.stages.build, repositoryPath);
 
     // 打包
     const tarName = getTaskTarName(task);
@@ -67,7 +69,7 @@ export async function createBuildPipline(options: {
     console.log(chalk.yellow('正在进行上传到服务器----'));
 
     if (!project_env.public_path) {
-      throw new Error(' project_env.public_path 不能为空');
+      throw new Error('project_env.public_path 不能为空');
     }
     await new Promise(async (resolve, reject) => {
       try {
@@ -89,9 +91,6 @@ export async function createBuildPipline(options: {
     })
 
     conn.end();
-
-    // clean
-    shelljs.exec(`git checkout -f master && git branch -D ${task.version}`);
 
     onSuccess();
   } catch (error) {
