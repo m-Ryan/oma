@@ -1,9 +1,0 @@
-{
-  "node": "12.16.0",
-  "stages": {
-    "fetch": "yarn install",
-    "build": "yarn build",
-    "deploy": ""
-  },
-  "uploadDir": "build"
-}

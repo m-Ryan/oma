@@ -21,7 +21,6 @@ export class UserEntity {
 
   @Column({
     type: 'varchar',
-    default: ''
   })
   nickname: string;
 

@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, getManager } from 'typeorm';
 import { UserEntity, UserRole } from './entities/user.entity';
@@ -39,7 +39,7 @@ export class UserService {
       password.password = encodePassword(dto.password);
       await transactionalEntityManager.save(password);
       return user;
-    })
+    });
   }
 
   async login(dto: LoginDto) {
@@ -62,6 +62,21 @@ export class UserService {
     });
 
     await this.user.save(user);
+
+    return user;
+  }
+
+  async getInfo(userId: number) {
+    const user = await this.user.findOne({
+      where: {
+        user_id: userId,
+        deleted_at: 0
+      }
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('登录信息过期');
+    }
 
     return user;
   }

@@ -14,9 +14,9 @@ async function bootstrap() {
       mkdir(DEPLOYMENT_DIR),
       mkdir(REPOSITORY_DIR),
       app.listen(7000)
-    ])
+    ]);
   } catch (error) {
-    console.log(error)
+    console.log(error);
   }
 
 }
