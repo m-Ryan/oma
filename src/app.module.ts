@@ -4,7 +4,6 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { isProduction, cwd } from './utils/util';
 import { UserModule } from './modules/user/user.module';
 import { UserAuthorizeMiddleware } from './common/middleware/user.authorize.middleware';
-import { HookModule } from './modules/hooks/hook.module';
 import { AppController } from './app.controller';
 
 
@@ -16,8 +15,7 @@ const ormConfig = require(mysqlConfigPath);
   imports: [
     TypeOrmModule.forRoot(ormConfig),
     DeploymentCModule,
-    UserModule,
-    HookModule
+    UserModule
   ],
   controllers: [AppController],
   providers: [],
