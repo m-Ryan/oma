@@ -15,7 +15,7 @@ export function isProduction() {
 }
 
 export function delay(time = 1000) {
-	return new Promise(resolve => setTimeout(resolve, time))
+	return new Promise(resolve => setTimeout(resolve, time));
 }
 
 export async function mkdir(dirname: string) {
@@ -52,5 +52,16 @@ export function readdir(pathUrl: string) {
 }
 
 export function getRepositoryName(gitPath: string) {
-	return gitPath.replace(/(.*)\/(.*)\.git$/, '$2')
+	return gitPath.replace(/(.*)\/(.*)\.git$/, '$2');
+}
+
+export function getSkip(page: number, size: number) {
+	return (page - 1) * size;
+}
+
+export function formatListResponse<T extends any = any>(data: [T[], number]) {
+	return {
+		list: data[0],
+		count: data[1]
+	};
 }

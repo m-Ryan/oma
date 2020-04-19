@@ -10,9 +10,7 @@ import {
 } from 'typeorm';
 
 import { ProjectEnvEntity } from './project_env.entity';
-import { ProjectTaskEntity } from './project_task.entity';
-import { ProjectGroupEntity } from './project_group.entity';
-
+import { ProjectMemberEntity } from './project_member.entity';
 
 @Entity('project')
 export class ProjectEntity {
@@ -75,7 +73,7 @@ export class ProjectEntity {
   @OneToMany((type) => ProjectEnvEntity, (ProjectEnvEntity) => ProjectEnvEntity.project)
   list: ProjectEnvEntity[];
 
-  @OneToOne((type) => ProjectGroupEntity, (ProjectGroupEntity) => ProjectGroupEntity.project)
-  group: ProjectGroupEntity;
+  @OneToMany((type) => ProjectMemberEntity, (ProjectMemberEntity) => ProjectMemberEntity.project)
+  members: ProjectMemberEntity[];
 
 }

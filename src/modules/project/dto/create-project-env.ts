@@ -1,4 +1,4 @@
-import { IsString, IsInt } from 'class-validator';
+import { IsString, IsInt, } from 'class-validator';
 
 export class CreateProjectEnvDto {
 
@@ -12,5 +12,8 @@ export class CreateProjectEnvDto {
   readonly env_name: string;
   @IsString()
   readonly branch: string;
+  @IsInt()
   readonly ssh_id: number;
+  @IsInt()
+  readonly auto_deploy: number;
 }

@@ -46,6 +46,12 @@ export class ProjectEnvEntity {
   ssh_id: number;
 
   @Column({
+    type: 'tinyint',
+    default: 0
+  })
+  auto_deploy: number;
+
+  @Column({
     type: 'varchar',
     length: 255,
     default: ''

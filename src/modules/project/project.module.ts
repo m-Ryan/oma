@@ -7,6 +7,7 @@ import { ProjectEnvEntity } from './entities/project_env.entity';
 import { ProjectTaskEntity } from './entities/project_task.entity';
 import { ProjectSchedule } from '../../deployment/ProjectSchedule';
 import { SSHEntity } from './entities/ssh.entity';
+import { ProjectMemberEntity } from './entities/project_member.entity';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { SSHEntity } from './entities/ssh.entity';
       ProjectEntity,
       ProjectEnvEntity,
       ProjectTaskEntity,
+      ProjectMemberEntity,
       SSHEntity
     ])
   ],

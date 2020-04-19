@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, UseGuards, Headers } from '@nestjs/common';
+import { Controller, Get, Post, Body, UseGuards, Headers, Query, ParseIntPipe, Param } from '@nestjs/common';
 import { DeploymentService } from './project.services';
 import { CreatePushMergePRDTO } from './dto/push-merge.pr.dto';
 import { CreateProjectDto } from './dto/create-project.dto';
@@ -7,7 +7,7 @@ import { CreateProjectEnvDto } from './dto/create-project-env';
 import { AuthGuard } from '../../common/guards/auth.guard';
 
 @UseGuards(AuthGuard)
-@Controller('deployment')
+@Controller('project')
 export class DeploymentController {
   constructor(
     private readonly service: DeploymentService,
@@ -25,13 +25,35 @@ export class DeploymentController {
   }
 
   @Post('create-ssh-config')
-  addSSH(@Body() dto: CreateSSHConfigDto) {
-    return this.service.createSSHConfig(dto);
+  addSSH(
+    @Body() dto: CreateSSHConfigDto,
+    @Headers('user_id') userId: number
+  ) {
+    return this.service.createSSHConfig(dto, userId);
   }
 
   @Post('create-project-env')
-  createProjectEnv(@Body() dto: CreateProjectEnvDto) {
-    return this.service.createProjectEnv(dto);
+  createProjectEnv(
+    @Body() dto: CreateProjectEnvDto,
+    @Headers('user_id') userId: number
+  ) {
+    return this.service.createProjectEnv(dto, userId);
+  }
+
+  @Get('list')
+  getList(@Query('page', new ParseIntPipe()) page: number, @Query('size', new ParseIntPipe()) size: number, @Headers('user_id') userId: number) {
+    return this.service.getList(page, size, userId);
+  }
+
+  @Get(':id/history')
+  getHistory(
+    @Query('page', new ParseIntPipe()) page: number,
+    @Query('size', new ParseIntPipe()) size: number,
+    @Param('id') id: string,
+    @Headers('user_id') userId: number,
+    @Query('project_id') projectId?: number,
+  ) {
+    return this.service.getHistoryList(page, size, userId, projectId);
   }
 
 }

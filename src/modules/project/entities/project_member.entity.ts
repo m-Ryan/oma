@@ -8,18 +8,16 @@ import {
   JoinColumn
 } from 'typeorm';
 
-import { ProjectEntity } from './project.entity';
 import { UserEntity } from '../../user/entities/user.entity';
-import { ProjectGroupEntity } from './project_group.entity';
-
-export enum GroupMemberRole {
+import { ProjectEntity } from './project.entity';
+export enum ProjectMemberRole {
   OWNER = 10,
   MEMBER = 5,
   USER = 1
 }
 
-@Entity('project_group_member')
-export class ProjectGroupMemberEntity {
+@Entity('project_member')
+export class ProjectMemberEntity {
   @PrimaryGeneratedColumn({
     type: 'int',
   }) member_id: number;
@@ -34,11 +32,11 @@ export class ProjectGroupMemberEntity {
     type: 'int',
     default: 0
   })
-  group_id: number;
+  project_id: number;
 
   @Column({
     type: 'tinyint',
-    default: GroupMemberRole.USER
+    default: ProjectMemberRole.USER
   })
   role: number;
 
@@ -64,8 +62,8 @@ export class ProjectGroupMemberEntity {
   @OneToOne((type) => UserEntity, (UserEntity) => UserEntity.user_id)
   user: UserEntity;
 
-  @ManyToOne((type) => ProjectGroupEntity, (ProjectGroupEntity) => ProjectGroupEntity.group_id)
-  @JoinColumn({ name: 'group_id' })
-  group: ProjectGroupEntity;
+  @ManyToOne((type) => ProjectEntity, (ProjectEntity) => ProjectEntity.members)
+  @JoinColumn({ name: 'project_id' })
+  project: ProjectEntity;
 
 }

@@ -1,21 +1,20 @@
 import { InjectRepository } from '@nestjs/typeorm';
 import { ProjectEntity } from './entities/project.entity';
-import { Repository, getManager } from 'typeorm';
+import { Repository, getManager, createQueryBuilder, FindManyOptions, FindConditions } from 'typeorm';
 import { CreatePushMergePRDTO } from './dto/push-merge.pr.dto';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { ProjectTaskEntity } from './entities/project_task.entity';
-import { ProjectGroupEntity } from './entities/project_group.entity';
-import { ProjectGroupMemberEntity, GroupMemberRole } from './entities/project_group_member.entity';
 import { CreateSSHConfigDto } from './dto/create-ssh-config.dto';
 import { SSHEntity, SSHType } from './entities/ssh.entity';
 import { CreateProjectEnvDto } from './dto/create-project-env';
 import { ProjectEnvEntity } from './entities/project_env.entity';
 import { ProjectSchedule } from '../../deployment/ProjectSchedule';
-import { getNowTimeStamp, getRepositoryName, existsDir } from '../../utils/util';
+import { getNowTimeStamp, getRepositoryName, existsDir, formatListResponse, getSkip } from '../../utils/util';
 import { encrypt } from '../../utils/crypto';
 import { NotAcceptableException, Injectable } from '@nestjs/common';
 import { REPOSITORY_DIR } from '../../constant';
 import shelljs from 'shelljs';
+import { ProjectMemberRole, ProjectMemberEntity } from './entities/project_member.entity';
 
 @Injectable()
 export class DeploymentService {
@@ -23,8 +22,9 @@ export class DeploymentService {
   constructor(
     private readonly ps: ProjectSchedule,
     @InjectRepository(ProjectEntity) private readonly pj: Repository<ProjectEntity>,
-    @InjectRepository(ProjectTaskEntity) private readonly pt: Repository<ProjectTaskEntity>,
+    @InjectRepository(ProjectTaskEntity) private readonly pjt: Repository<ProjectTaskEntity>,
     @InjectRepository(ProjectEnvEntity) private readonly pje: Repository<ProjectEnvEntity>,
+    @InjectRepository(ProjectMemberEntity) private readonly pjm: Repository<ProjectMemberEntity>,
     @InjectRepository(SSHEntity) private readonly ssh: Repository<SSHEntity>,
   ) {
 
@@ -56,35 +56,25 @@ export class DeploymentService {
       newProject.updated_at = now;
       await transactionalEntityManager.save(newProject);
 
-      // create group
-      const group = transactionalEntityManager.create(ProjectGroupEntity);
-      group.project_id = newProject.project_id;
-      group.owner_id = userId;
-      group.created_at = now;
-      group.updated_at = now;
-      await transactionalEntityManager.save(group);
-
       // create member
-      const member = transactionalEntityManager.create(ProjectGroupMemberEntity);
-      member.role = GroupMemberRole.OWNER;
+      const member = transactionalEntityManager.create(ProjectMemberEntity);
+      member.role = ProjectMemberRole.OWNER;
       member.user_id = userId;
       member.created_at = now;
       member.updated_at = now;
-      member.group_id = group.group_id;
+      member.project_id = newProject.project_id;
       await transactionalEntityManager.save(member);
-      newProject.group = group;
-      group.members = [member];
+      newProject.members = [member];
       return newProject;
     });
 
   }
 
-  async createProjectEnv(dto: CreateProjectEnvDto) {
+  async createProjectEnv(dto: CreateProjectEnvDto, userId: number) {
     const now = getNowTimeStamp();
-    const user_id = 1;
     const env = this.pje.create();
     env.project_id = dto.project_id;
-    env.user_id = user_id;
+    env.user_id = userId;
     env.name = dto.name;
     env.branch = dto.branch;
     env.env_name = dto.env_name;
@@ -93,14 +83,14 @@ export class DeploymentService {
     env.name = dto.name;
     env.created_at = now;
     env.updated_at = now;
+    env.auto_deploy = dto.auto_deploy;
     return this.pje.save(env);
   }
 
-  async createSSHConfig(dto: CreateSSHConfigDto) {
+  async createSSHConfig(dto: CreateSSHConfigDto, userId: number) {
     const now = getNowTimeStamp();
-    const user_id = 1;
     const ssh = this.ssh.create();
-    ssh.user_id = user_id;
+    ssh.user_id = userId;
     ssh.name = dto.name;
     ssh.username = dto.username;
     ssh.host = dto.host;
@@ -125,4 +115,31 @@ export class DeploymentService {
     return { message: 'success' };
   }
 
-}
+  async getList(page: number, size: number, userId: number) {
+    const data = await getManager().createQueryBuilder(ProjectEntity, 'project')
+      .leftJoin('project.members', 'members')
+      .where("project.deleted_at = :deleted_at", { deleted_at: 0 })
+      .andWhere("members.user_id = :user_id", { user_id: userId })
+      .take(size)
+      .skip(getSkip(page, size))
+      .getManyAndCount();
+    return formatListResponse(data);
+  }
+
+  async getHistoryList(page: number, size: number, userId: number, projectId?: number) {
+
+    const condition: FindConditions<ProjectTaskEntity> = {
+      deleted_at: 0,
+    };
+    if (projectId) {
+      condition.project_id = projectId;
+    }
+    const data = await this.pjt.findAndCount({
+      where: condition,
+      take: size,
+      skip: getSkip(page, size)
+    });
+    return formatListResponse(data);
+  }
+
+} 

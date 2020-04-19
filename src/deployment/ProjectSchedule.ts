@@ -48,8 +48,6 @@ export class ProjectSchedule {
       throw new NotAcceptableException('该分支没有配置构建');
     }
 
-    env.project = project;
-
     const newTask = this.pt.create();
     newTask.repository = dto.repository.name;
     newTask.branch = branch;
@@ -59,7 +57,9 @@ export class ProjectSchedule {
     newTask.updated_at = dayjs().unix();
     newTask.project_env_id = env.project_env_id;
     newTask.project_env = env;
+    newTask.project_id = project.project_id;
     await this.pt.save(newTask);
+    newTask.project = project;
     this.taskQueue.push(newTask);
     this.beginTasks();
   }
