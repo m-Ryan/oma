@@ -5,7 +5,6 @@ export class CreateSSHConfigDto {
   readonly name: string;
   @IsString()
   readonly host: string;
-  @IsInt()
   readonly port: number;
   @IsString()
   readonly username: string;

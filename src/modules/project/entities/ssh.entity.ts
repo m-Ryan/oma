@@ -66,6 +66,12 @@ export class SSHEntity {
   user_id: number;
 
   @Column({
+    type: 'int',
+    default: 0
+  })
+  remove_user_id: number;
+
+  @Column({
     type: 'tinyint',
     default: 0
   })

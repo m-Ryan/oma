@@ -6,6 +6,6 @@ export class CreateProjectDto {
   readonly name: string;
   @IsString()
   readonly git_path: string;
-  readonly envs: CreateProjectEnvDto[]
+  readonly envs: Omit<CreateProjectEnvDto, 'project_id'>[];
 }
 

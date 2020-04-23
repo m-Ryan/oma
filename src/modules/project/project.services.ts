@@ -142,4 +142,28 @@ export class DeploymentService {
     return formatListResponse(data);
   }
 
+  async getSSHList(page: number, size: number) {
+
+    const condition: FindConditions<ProjectTaskEntity> = {
+      deleted_at: 0,
+    };
+
+    const data = await this.ssh.findAndCount({
+      where: condition,
+      take: size,
+      skip: getSkip(page, size)
+    });
+    return formatListResponse(data);
+  }
+
+  async deleteSSH(sshId: number, userId: number) {
+    return this.ssh.update({
+      ssh_id: sshId
+    }, {
+      deleted_at: 1,
+      remove_user_id: userId,
+      updated_at: getNowTimeStamp()
+    });
+  }
+
 } 
