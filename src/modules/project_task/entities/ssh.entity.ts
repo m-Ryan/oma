@@ -2,9 +2,7 @@ import {
   Entity,
   Column,
   PrimaryGeneratedColumn,
-  OneToMany,
 } from 'typeorm';
-import { ProjectTaskEntity } from './project_task.entity';
 
 export enum SSHType {
   PWD = 1,
@@ -69,7 +67,7 @@ export class SSHEntity {
     type: 'int',
     default: 0
   })
-  remove_user_id: number;
+  updated_user_id: number;
 
   @Column({
     type: 'tinyint',

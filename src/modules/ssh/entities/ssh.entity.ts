@@ -2,49 +2,54 @@ import {
   Entity,
   Column,
   PrimaryGeneratedColumn,
-  BaseEntity,
-  getConnection,
-  OneToOne,
-  JoinColumn,
-  OneToMany
 } from 'typeorm';
 
-import { ProjectEnvEntity } from './project_env.entity';
-import { ProjectMemberEntity } from './project_member.entity';
+export enum SSHType {
+  PWD = 1,
+  PRIVATE_KEY = 2
+}
 
-@Entity('project')
-export class ProjectEntity {
+@Entity('ssh')
+export class SSHEntity {
   @PrimaryGeneratedColumn({
     type: 'int',
-  }) project_id: number;
+  }) ssh_id: number;
 
   @Column({
     type: 'varchar',
-
     default: ''
   })
   name: string;
 
   @Column({
     type: 'varchar',
-
     default: ''
   })
-  repository_name: string;
+  host: string;
+
+  @Column({
+    type: 'int',
+    default: 22
+  })
+  port: number;
 
   @Column({
     type: 'varchar',
-    length: 255,
     default: ''
   })
-  git_path: string;
+  username: string;
 
   @Column({
     type: 'varchar',
-    length: 255,
     default: ''
   })
-  desc: string;
+  password: string;
+
+  @Column({
+    type: 'varchar',
+    default: ''
+  })
+  privateKey: string;
 
   @Column({
     type: 'int',
@@ -62,6 +67,18 @@ export class ProjectEntity {
     type: 'int',
     default: 0
   })
+  updated_user_id: number;
+
+  @Column({
+    type: 'tinyint',
+    default: 0
+  })
+  type: SSHType;
+
+  @Column({
+    type: 'int',
+    default: 0
+  })
   updated_at: number;
 
   @Column({
@@ -69,11 +86,5 @@ export class ProjectEntity {
     default: 0
   })
   deleted_at: number;
-
-  @OneToMany((type) => ProjectEnvEntity, (ProjectEnvEntity) => ProjectEnvEntity.project)
-  envs: ProjectEnvEntity[];
-
-  @OneToMany((type) => ProjectMemberEntity, (ProjectMemberEntity) => ProjectMemberEntity.project)
-  members: ProjectMemberEntity[];
 
 }

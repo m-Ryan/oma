@@ -10,8 +10,8 @@ import {
 } from 'typeorm';
 
 import { ProjectEntity } from './project.entity';
-import { SSHEntity } from './ssh.entity';
-import { ProjectTaskEntityStatus, ProjectTaskEntity } from './project_task.entity';
+import { ProjectTaskEntityStatus, ProjectTaskEntity } from '../../project_task/entities/project_task.entity';
+import { SSHEntity } from '../../ssh/entities/ssh.entity';
 
 
 @Entity('project_env')
@@ -94,7 +94,7 @@ export class ProjectEnvEntity {
   @OneToMany((type) => ProjectTaskEntity, (ProjectTaskEntity) => ProjectTaskEntity.project_env)
   tasks: ProjectTaskEntityStatus[];
 
-  @ManyToOne((type) => ProjectEntity, (ProjectEntity) => ProjectEntity.list)
+  @ManyToOne((type) => ProjectEntity, (ProjectEntity) => ProjectEntity.envs)
   @JoinColumn({ name: 'project_id' })
   project: ProjectEntity;
 

@@ -1,5 +1,4 @@
 import path from 'path';
-import { ProjectTaskEntity } from '../modules/project/entities/project_task.entity';
 import {
   getTaskTarName,
   existsDir,
@@ -8,12 +7,13 @@ import {
 } from '../utils/util';
 import { REPOSITORY_DIR, DEPLOYMENT_DIR } from '../constant';
 import { getSSHInstance } from '../utils/ssh';
-import { SSHEntity, SSHType } from '../modules/project/entities/ssh.entity';
+import { SSHEntity, SSHType } from '../modules/ssh/entities/ssh.entity';
 import chalk from 'chalk';
 import { decrypt } from '../utils/crypto';
 import { Omafile } from '../typing/omafile';
 import fs from 'fs-extra';
 import shelljs, { env } from 'shelljs';
+import { ProjectTaskEntity } from '../modules/project_task/entities/project_task.entity';
 
 export async function createBuildPipline(options: {
   task: ProjectTaskEntity;

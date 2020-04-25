@@ -1,12 +1,9 @@
 import { Module } from '@nestjs/common';
-import { DeploymentService } from './project.services';
-import { DeploymentController } from './project.controller';
+import { ProjectService } from './project.services';
+import { ProjectController } from './project.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ProjectEntity } from './entities/project.entity';
 import { ProjectEnvEntity } from './entities/project_env.entity';
-import { ProjectTaskEntity } from './entities/project_task.entity';
-import { ProjectSchedule } from '../../deployment/ProjectSchedule';
-import { SSHEntity } from './entities/ssh.entity';
 import { ProjectMemberEntity } from './entities/project_member.entity';
 
 @Module({
@@ -14,12 +11,10 @@ import { ProjectMemberEntity } from './entities/project_member.entity';
     TypeOrmModule.forFeature([
       ProjectEntity,
       ProjectEnvEntity,
-      ProjectTaskEntity,
-      ProjectMemberEntity,
-      SSHEntity
+      ProjectMemberEntity
     ])
   ],
-  controllers: [DeploymentController],
-  providers: [DeploymentService, ProjectSchedule],
+  controllers: [ProjectController],
+  providers: [ProjectService],
 })
-export class DeploymentCModule { }
+export class ProjectCModule { }

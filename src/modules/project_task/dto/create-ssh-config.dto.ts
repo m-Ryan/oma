@@ -1,4 +1,5 @@
 import { IsString, IsInt } from 'class-validator';
+import { SSHType } from '../entities/ssh.entity';
 
 export class CreateSSHConfigDto {
   @IsString()
@@ -10,4 +11,6 @@ export class CreateSSHConfigDto {
   readonly username: string;
   readonly password?: string;
   readonly privateKey?: string;
+  @IsInt()
+  readonly type: SSHType;
 }

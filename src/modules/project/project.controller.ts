@@ -1,71 +1,29 @@
 import { Controller, Get, Post, Body, UseGuards, Headers, Query, ParseIntPipe, Param } from '@nestjs/common';
-import { DeploymentService } from './project.services';
-import { CreatePushMergePRDTO } from './dto/push-merge.pr.dto';
+import { ProjectService } from './project.services';
 import { CreateProjectDto } from './dto/create-project.dto';
-import { CreateSSHConfigDto } from './dto/create-ssh-config.dto';
 import { CreateProjectEnvDto } from './dto/create-project-env';
 import { AuthGuard } from '../../common/guards/auth.guard';
-import { AdminGuard } from '../../common/guards/admin.guard';
 
 @UseGuards(AuthGuard)
 @Controller('project')
-export class DeploymentController {
+export class ProjectController {
   constructor(
-    private readonly service: DeploymentService,
+    private readonly service: ProjectService,
   ) { }
 
-
   @Post('create')
-  findAll(@Body() dto: CreateProjectDto, @Headers('user_id') userId: number) {
-    return this.service.createProject(dto, userId);
+  create(@Body() dto: CreateProjectDto, @Headers('user_id') userId: number) {
+    return this.service.create(dto, userId);
   }
 
-  @Post('push')
-  pushMergePR(@Body() dto: CreatePushMergePRDTO) {
-    return this.service.pushMergePR(dto);
-  }
-
-  @Post('create-ssh-config')
-  addSSH(
-    @Body() dto: CreateSSHConfigDto,
-    @Headers('user_id') userId: number
-  ) {
-    return this.service.createSSHConfig(dto, userId);
-  }
-
-  @Post('create-project-env')
-  createProjectEnv(
-    @Body() dto: CreateProjectEnvDto,
-    @Headers('user_id') userId: number
-  ) {
-    return this.service.createProjectEnv(dto, userId);
+  @Post('update')
+  update(@Body() dto: CreateProjectDto, @Query('project_id', new ParseIntPipe()) projectId: number, @Headers('user_id') userId: number) {
+    return this.service.update(projectId, dto, userId);
   }
 
   @Get('list')
   getList(@Query('page', new ParseIntPipe()) page: number, @Query('size', new ParseIntPipe()) size: number, @Headers('user_id') userId: number) {
     return this.service.getList(page, size, userId);
-  }
-
-  @Get('ssh-list')
-  getSSHList(@Query('page', new ParseIntPipe()) page: number, @Query('size', new ParseIntPipe()) size: number) {
-    return this.service.getSSHList(page, size);
-  }
-
-  @Post('delete-ssh')
-  @UseGuards(AdminGuard)
-  getDeleteSSH(@Query('ssh_id', new ParseIntPipe()) sshId: number, @Headers('user_id') userId: number) {
-    return this.service.deleteSSH(sshId, userId);
-  }
-
-  @Get(':id/history')
-  getHistory(
-    @Query('page', new ParseIntPipe()) page: number,
-    @Query('size', new ParseIntPipe()) size: number,
-    @Param('id') id: string,
-    @Headers('user_id') userId: number,
-    @Query('project_id') projectId?: number,
-  ) {
-    return this.service.getHistoryList(page, size, userId, projectId);
   }
 
 }

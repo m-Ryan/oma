@@ -5,8 +5,8 @@ import {
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
-import { ProjectEnvEntity } from './project_env.entity';
-import { ProjectEntity } from './project.entity';
+import { ProjectEntity } from '../../project/entities/project.entity';
+import { ProjectEnvEntity } from '../../project/entities/project_env.entity';
 
 export enum ProjectTaskEntityStatus {
   PENDING = 0,

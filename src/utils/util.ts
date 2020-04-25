@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import util from 'util';
 import dayjs from 'dayjs';
-import { ProjectTaskEntity } from '../modules/project/entities/project_task.entity';
+import { ProjectTaskEntity } from '../modules/project_task/entities/project_task.entity';
 
 export const cwd = process.cwd();
 

@@ -7,9 +7,9 @@ import { createBuildPipline } from './ProjectTask';
 import {
   ProjectTaskEntity,
   ProjectTaskEntityStatus,
-} from '../modules/project/entities/project_task.entity';
+} from '../modules/project_task/entities/project_task.entity';
 import dayjs from 'dayjs';
-import { SSHEntity } from '../modules/project/entities/ssh.entity';
+import { SSHEntity } from '../modules/ssh/entities/ssh.entity';
 import { ProjectEnvEntity } from '../modules/project/entities/project_env.entity';
 
 @Injectable()
