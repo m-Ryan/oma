@@ -3,14 +3,14 @@ import { ProjectService } from './project.services';
 import { ProjectController } from './project.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ProjectEntity } from './entities/project.entity';
-import { ProjectEnvEntity } from './entities/project_env.entity';
+import { ProjectEnvironmentEntity } from './entities/project_environment.entity';
 import { ProjectMemberEntity } from './entities/project_member.entity';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([
       ProjectEntity,
-      ProjectEnvEntity,
+      ProjectEnvironmentEntity,
       ProjectMemberEntity
     ])
   ],

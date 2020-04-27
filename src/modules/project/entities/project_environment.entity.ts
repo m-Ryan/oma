@@ -14,8 +14,8 @@ import { ProjectTaskEntityStatus, ProjectTaskEntity } from '../../project_task/e
 import { SSHEntity } from '../../ssh/entities/ssh.entity';
 
 
-@Entity('project_env')
-export class ProjectEnvEntity {
+@Entity('project_environment')
+export class ProjectEnvironmentEntity {
   @PrimaryGeneratedColumn({
     type: 'int',
   }) project_env_id: number;
@@ -60,10 +60,9 @@ export class ProjectEnvEntity {
 
   @Column({
     type: 'varchar',
-    length: 255,
     default: ''
   })
-  env_name: string;
+  variables: string;
 
   @Column({
     type: 'varchar',
@@ -94,7 +93,7 @@ export class ProjectEnvEntity {
   @OneToMany((type) => ProjectTaskEntity, (ProjectTaskEntity) => ProjectTaskEntity.project_env)
   tasks: ProjectTaskEntityStatus[];
 
-  @ManyToOne((type) => ProjectEntity, (ProjectEntity) => ProjectEntity.envs)
+  @ManyToOne((type) => ProjectEntity, (ProjectEntity) => ProjectEntity.environments)
   @JoinColumn({ name: 'project_id' })
   project: ProjectEntity;
 

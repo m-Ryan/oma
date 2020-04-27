@@ -1,6 +1,6 @@
 import { IsString, IsInt, } from 'class-validator';
 
-export class CreateProjectEnvDto {
+export class CreateProjectEnvironmentDto {
 
   @IsInt()
   readonly project_id: number;
@@ -9,7 +9,7 @@ export class CreateProjectEnvDto {
   @IsString()
   readonly public_path: string;
   @IsString()
-  readonly env_name: string;
+  readonly variables: string;
   @IsString()
   readonly branch: string;
   @IsInt()

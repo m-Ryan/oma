@@ -6,7 +6,7 @@ import {
   JoinColumn,
 } from 'typeorm';
 import { ProjectEntity } from '../../project/entities/project.entity';
-import { ProjectEnvEntity } from '../../project/entities/project_env.entity';
+import { ProjectEnvironmentEntity } from '../../project/entities/project_environment.entity';
 
 export enum ProjectTaskEntityStatus {
   PENDING = 0,
@@ -108,10 +108,10 @@ export class ProjectTaskEntity {
   project: ProjectEntity;
 
   @ManyToOne(
-    type => ProjectEnvEntity,
-    ProjectEnvEntity => ProjectEnvEntity.project_env_id,
+    type => ProjectEnvironmentEntity,
+    ProjectEnvironmentEntity => ProjectEnvironmentEntity.project_env_id,
   )
   @JoinColumn({ name: 'project_env_id' })
-  project_env: ProjectEnvEntity;
+  project_env: ProjectEnvironmentEntity;
 
 }

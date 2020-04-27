@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Body, UseGuards, Headers, Query, ParseIntPipe, Param } from '@nestjs/common';
 import { ProjectService } from './project.services';
 import { CreateProjectDto } from './dto/create-project.dto';
-import { CreateProjectEnvDto } from './dto/create-project-env';
+import { CreateProjectEnvironmentDto } from './dto/create-project-env';
 import { AuthGuard } from '../../common/guards/auth.guard';
 
 @UseGuards(AuthGuard)
@@ -19,6 +19,11 @@ export class ProjectController {
   @Post('update')
   update(@Body() dto: CreateProjectDto, @Query('project_id', new ParseIntPipe()) projectId: number, @Headers('user_id') userId: number) {
     return this.service.update(projectId, dto, userId);
+  }
+
+  @Post('remove')
+  remove(@Query('project_id', new ParseIntPipe()) projectId: number, @Headers('user_id') userId: number) {
+    return this.service.remove(projectId, userId);
   }
 
   @Get('list')

@@ -6,3 +6,8 @@ export const REPOSITORY_DIR = path.resolve(cwd, '.repository');
 export const DEPLOYMENT_DIR = path.resolve(cwd, '.deployment');
 
 export const MAX_HISTORY_LIMIT = 10;
+
+export const successResponse = {
+  message: 'ok',
+  status: 200,
+};

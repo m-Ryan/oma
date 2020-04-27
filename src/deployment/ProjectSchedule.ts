@@ -10,7 +10,7 @@ import {
 } from '../modules/project_task/entities/project_task.entity';
 import dayjs from 'dayjs';
 import { SSHEntity } from '../modules/ssh/entities/ssh.entity';
-import { ProjectEnvEntity } from '../modules/project/entities/project_env.entity';
+import { ProjectEnvironmentEntity } from '../modules/project/entities/project_environment.entity';
 
 @Injectable()
 export class ProjectSchedule {
@@ -19,7 +19,7 @@ export class ProjectSchedule {
   private maxLimit: number = 2;
   constructor(
     @InjectRepository(ProjectEntity) private readonly pj: Repository<ProjectEntity>,
-    @InjectRepository(ProjectEnvEntity) private readonly pje: Repository<ProjectEnvEntity>,
+    @InjectRepository(ProjectEnvironmentEntity) private readonly pje: Repository<ProjectEnvironmentEntity>,
     @InjectRepository(ProjectTaskEntity) private readonly pt: Repository<ProjectTaskEntity>,
     @InjectRepository(SSHEntity) private readonly ssh: Repository<SSHEntity>,
   ) { }

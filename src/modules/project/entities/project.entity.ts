@@ -9,7 +9,7 @@ import {
   OneToMany
 } from 'typeorm';
 
-import { ProjectEnvEntity } from './project_env.entity';
+import { ProjectEnvironmentEntity } from './project_environment.entity';
 import { ProjectMemberEntity } from './project_member.entity';
 
 @Entity('project')
@@ -68,10 +68,16 @@ export class ProjectEntity {
     type: 'int',
     default: 0
   })
+  updated_user_id: number;
+
+  @Column({
+    type: 'int',
+    default: 0
+  })
   deleted_at: number;
 
-  @OneToMany((type) => ProjectEnvEntity, (ProjectEnvEntity) => ProjectEnvEntity.project)
-  envs: ProjectEnvEntity[];
+  @OneToMany((type) => ProjectEnvironmentEntity, (ProjectEnvironmentEntity) => ProjectEnvironmentEntity.project)
+  environments: ProjectEnvironmentEntity[];
 
   @OneToMany((type) => ProjectMemberEntity, (ProjectMemberEntity) => ProjectMemberEntity.project)
   members: ProjectMemberEntity[];

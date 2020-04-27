@@ -3,23 +3,23 @@ import { ProjectEntity } from './entities/project.entity';
 import { Repository, getManager, createQueryBuilder, FindManyOptions } from 'typeorm';
 import { CreatePushMergePRDTO } from './dto/push-merge.pr.dto';
 import { CreateProjectDto } from './dto/create-project.dto';
-import { CreateProjectEnvDto } from './dto/create-project-env';
-import { ProjectEnvEntity } from './entities/project_env.entity';
+import { ProjectEnvironmentEntity } from './entities/project_environment.entity';
 import { ProjectSchedule } from '../../deployment/ProjectSchedule';
 import { getNowTimeStamp, getRepositoryName, existsDir, formatListResponse, getSkip } from '../../utils/util';
 import { encrypt } from '../../utils/crypto';
 import { NotAcceptableException, Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
-import { REPOSITORY_DIR } from '../../constant';
+import { REPOSITORY_DIR, successResponse } from '../../constant';
 import shelljs from 'shelljs';
 import { ProjectMemberRole, ProjectMemberEntity } from './entities/project_member.entity';
 import { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
+import { CreateProjectEnvironmentDto } from './dto/create-project-env';
 
 @Injectable()
 export class ProjectService {
 
   constructor(
     @InjectRepository(ProjectEntity) private readonly pj: Repository<ProjectEntity>,
-    @InjectRepository(ProjectEnvEntity) private readonly pje: Repository<ProjectEnvEntity>,
+    @InjectRepository(ProjectEnvironmentEntity) private readonly pje: Repository<ProjectEnvironmentEntity>,
     @InjectRepository(ProjectMemberEntity) private readonly pjm: Repository<ProjectMemberEntity>,
   ) {
 
@@ -28,7 +28,8 @@ export class ProjectService {
   async create(dto: CreateProjectDto, userId: number) {
     return getManager().transaction(async transactionalEntityManager => {
       const project = await this.pj.findOne({
-        git_path: dto.git_path
+        git_path: dto.git_path,
+        deleted_at: 0
       });
       if (project) {
         throw new NotAcceptableException('该项目已存在，创建失败');
@@ -39,6 +40,9 @@ export class ProjectService {
         shelljs.exec(`cd ${REPOSITORY_DIR} && git clone ${dto.git_path} ${repositoryName}`);
       } else {
         throw new NotAcceptableException('已有同名项目');
+      }
+      if (!dto.environments.length) {
+        throw new NotAcceptableException('至少要有一个部署环境');
       }
       const now = getNowTimeStamp();
       // crate project
@@ -60,6 +64,26 @@ export class ProjectService {
       member.project_id = newProject.project_id;
       await transactionalEntityManager.save(member);
       newProject.members = [member];
+
+      const environments = await Promise.all(dto.environments.map(item => {
+        const environment = transactionalEntityManager.create(ProjectEnvironmentEntity);
+        environment.project_id = newProject.project_id;
+        environment.user_id = userId;
+        environment.name = item.name;
+        environment.branch = item.branch;
+        environment.variables = item.variables;
+        environment.public_path = item.public_path;
+        environment.ssh_id = item.ssh_id;
+        environment.name = item.name;
+        environment.created_at = now;
+        environment.updated_at = now;
+        environment.auto_deploy = item.auto_deploy;
+        console.log(environment);
+        return transactionalEntityManager.save(environment);
+      }));
+
+      newProject.environments = environments;
+      // create environment 
       return newProject;
     });
 
@@ -72,7 +96,7 @@ export class ProjectService {
         project_id: projectId,
         deleted_at: 0
       });
-      if (project) {
+      if (!project) {
         throw new NotAcceptableException('项目不存在');
       }
 
@@ -83,21 +107,41 @@ export class ProjectService {
 
   }
 
-  async createProjectEnv(dto: CreateProjectEnvDto, userId: number) {
+  async remove(projectId: number, userId: number) {
+    const project = await this.pj.findOne({
+      project_id: projectId,
+      deleted_at: 0
+    });
+    if (!project) {
+      throw new NotAcceptableException('项目不存在');
+    }
+    const gitPath = project.git_path;
+
+    project.deleted_at = getNowTimeStamp();
+    project.updated_user_id = userId;
+    await this.pj.save(project);
+
+    const repositoryName = getRepositoryName(gitPath);
+    shelljs.exec(`cd ${REPOSITORY_DIR} && rm -rf ${gitPath} ${repositoryName}`);
+    return successResponse;
+  }
+
+  async createProjectEnv(dto: CreateProjectEnvironmentDto, userId: number) {
     const now = getNowTimeStamp();
-    const env = this.pje.create();
-    env.project_id = dto.project_id;
-    env.user_id = userId;
-    env.name = dto.name;
-    env.branch = dto.branch;
-    env.env_name = dto.env_name;
-    env.public_path = dto.public_path;
-    env.ssh_id = dto.ssh_id;
-    env.name = dto.name;
-    env.created_at = now;
-    env.updated_at = now;
-    env.auto_deploy = dto.auto_deploy;
-    return this.pje.save(env);
+    const environment = this.pje.create();
+    environment.project_id = dto.project_id;
+    environment.user_id = userId;
+    environment.name = dto.name;
+    environment.branch = dto.branch;
+    environment.variables = dto.variables;
+    environment.public_path = dto.public_path;
+    environment.ssh_id = dto.ssh_id;
+    environment.name = dto.name;
+    environment.created_at = now;
+    environment.updated_at = now;
+    environment.auto_deploy = dto.auto_deploy;
+    await this.pje.save(environment);
+    return successResponse;
   }
 
   // async pushMergePR(dto: CreatePushMergePRDTO) {
@@ -110,7 +154,7 @@ export class ProjectService {
   async getList(page: number, size: number, userId: number) {
     const data = await getManager().createQueryBuilder(ProjectEntity, 'project')
       .leftJoin('project.members', 'members')
-      .leftJoinAndSelect('project.envs', 'envs')
+      .leftJoinAndSelect('project.environments', 'environments')
       .where("project.deleted_at = :deleted_at", { deleted_at: 0 })
       .andWhere("members.user_id = :user_id", { user_id: userId })
       .take(size)
