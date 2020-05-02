@@ -6,9 +6,11 @@ import { UserModule } from './modules/user/user.module';
 import { UserAuthorizeMiddleware } from './common/middleware/user.authorize.middleware';
 import { AppController } from './app.controller';
 import { SSHCModule } from './modules/ssh/ssh.module';
+import { ProjectTaskModule } from './modules/project_task/project_task.module';
 
-
-const mysqlConfigPath = isProduction() ? cwd + '/config/mysql.orm.pro.json' : cwd + '/config/mysql.orm.dev.json';
+const mysqlConfigPath = isProduction()
+  ? cwd + '/config/mysql.orm.pro.json'
+  : cwd + '/config/mysql.orm.dev.json';
 
 const ormConfig = require(mysqlConfigPath);
 
@@ -16,8 +18,9 @@ const ormConfig = require(mysqlConfigPath);
   imports: [
     TypeOrmModule.forRoot(ormConfig),
     ProjectCModule,
+    ProjectTaskModule,
     SSHCModule,
-    UserModule
+    UserModule,
   ],
   controllers: [AppController],
   providers: [],

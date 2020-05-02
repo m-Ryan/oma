@@ -2,7 +2,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Injectable, NotAcceptableException } from '@nestjs/common';
 import { ProjectEntity } from '../modules/project/entities/project.entity';
 import { Repository, Transaction } from 'typeorm';
-import { CreatePushMergePRDTO } from '../modules/project/dto/push-merge.pr.dto';
 import { createBuildPipline } from './ProjectTask';
 import {
   ProjectTaskEntity,
@@ -11,6 +10,7 @@ import {
 import dayjs from 'dayjs';
 import { SSHEntity } from '../modules/ssh/entities/ssh.entity';
 import { ProjectEnvironmentEntity } from '../modules/project/entities/project_environment.entity';
+import { CreateTaskDTO } from '../modules/project_task/dto/create-task.dto';
 
 @Injectable()
 export class ProjectSchedule {
@@ -18,13 +18,16 @@ export class ProjectSchedule {
   private taskBuildQueue: ProjectTaskEntity[] = [];
   private maxLimit: number = 2;
   constructor(
-    @InjectRepository(ProjectEntity) private readonly pj: Repository<ProjectEntity>,
-    @InjectRepository(ProjectEnvironmentEntity) private readonly pje: Repository<ProjectEnvironmentEntity>,
-    @InjectRepository(ProjectTaskEntity) private readonly pt: Repository<ProjectTaskEntity>,
+    @InjectRepository(ProjectEntity)
+    private readonly pj: Repository<ProjectEntity>,
+    @InjectRepository(ProjectEnvironmentEntity)
+    private readonly pje: Repository<ProjectEnvironmentEntity>,
+    @InjectRepository(ProjectTaskEntity)
+    private readonly pt: Repository<ProjectTaskEntity>,
     @InjectRepository(SSHEntity) private readonly ssh: Repository<SSHEntity>,
-  ) { }
+  ) {}
 
-  async createTask(dto: CreatePushMergePRDTO) {
+  async createTask(dto: CreateTaskDTO) {
     const branch = dto.ref.replace(/refs\/heads\/(\w+)/, '$1');
     const project = await this.pj.findOne({
       repository_name: dto.repository.name,
@@ -39,9 +42,9 @@ export class ProjectSchedule {
       where: {
         project_id: project.project_id,
         deleted_at: 0,
-        branch
+        branch,
       },
-      relations: ['ssh']
+      relations: ['ssh'],
     });
 
     if (!env) {

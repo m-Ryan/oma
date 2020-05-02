@@ -1,4 +1,4 @@
-export class CreatePushMergePRDTO {
+export class CreateTaskDTO {
   readonly ref: string;
   readonly before: string;
   readonly after: string;
@@ -19,7 +19,7 @@ interface IRepository {
   node_id: string;
   name: string;
   full_name: string;
-  'private': boolean;
+  private: boolean;
   owner: IOwner;
   html_url: string;
   description: null;

@@ -3,14 +3,20 @@ import { ProjectTaskService } from './project_task.services';
 import { ProjectTaskController } from './project_task.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { SSHEntity } from './entities/ssh.entity';
+import { ProjectEntity } from '../project/entities/project.entity';
+import { ProjectTaskEntity } from './entities/project_task.entity';
+import { ProjectEnvironmentEntity } from '../project/entities/project_environment.entity';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([
-      SSHEntity
-    ])
+      SSHEntity,
+      ProjectEntity,
+      ProjectTaskEntity,
+      ProjectEnvironmentEntity,
+    ]),
   ],
   controllers: [ProjectTaskController],
   providers: [ProjectTaskService],
 })
-export class ProjectTaskModule { }
+export class ProjectTaskModule {}

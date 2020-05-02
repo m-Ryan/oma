@@ -4,20 +4,20 @@ import { CreateSSHConfigDto } from './dto/create-ssh-config.dto';
 import { SSHEntity, SSHType } from './entities/ssh.entity';
 import { getNowTimeStamp, formatListResponse, getSkip } from '../../utils/util';
 import { encrypt } from '../../utils/crypto';
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
 
 @Injectable()
 export class SSHService {
-
   constructor(
     @InjectRepository(SSHEntity) private readonly ssh: Repository<SSHEntity>,
-  ) {
-
-  }
+  ) {}
 
   async getList(page: number, size: number) {
-
     const condition: QueryDeepPartialEntity<SSHEntity> = {
       deleted_at: 0,
     };
@@ -25,11 +25,13 @@ export class SSHService {
     const data = await this.ssh.findAndCount({
       where: condition,
       take: size,
-      skip: getSkip(page, size)
+      skip: getSkip(page, size),
+      order: {
+        created_at: 'DESC',
+      },
     });
     return formatListResponse(data);
   }
-
 
   async create(dto: CreateSSHConfigDto, userId: number) {
     const now = getNowTimeStamp();
@@ -52,11 +54,14 @@ export class SSHService {
     return ssh;
   }
 
-  async update(sshId: number, dto: Partial<CreateSSHConfigDto>, userId: number) {
-
+  async update(
+    sshId: number,
+    dto: Partial<CreateSSHConfigDto>,
+    userId: number,
+  ) {
     const ssh = await this.ssh.findOne({
       ssh_id: sshId,
-      deleted_at: 0
+      deleted_at: 0,
     });
     if (!ssh) {
       throw new NotFoundException('ssh 不存在');
@@ -83,26 +88,30 @@ export class SSHService {
       }
     }
 
-    return this.ssh.update({
-      ssh_id: sshId,
-      deleted_at: 0,
-    }, {
-      ...updateColumn,
-      updated_user_id: userId,
-      updated_at: getNowTimeStamp()
-    });
+    return this.ssh.update(
+      {
+        ssh_id: sshId,
+        deleted_at: 0,
+      },
+      {
+        ...updateColumn,
+        updated_user_id: userId,
+        updated_at: getNowTimeStamp(),
+      },
+    );
   }
-
 
   async remove(sshId: number, userId: number) {
-    return this.ssh.update({
-      ssh_id: sshId,
-      deleted_at: 0,
-    }, {
-      deleted_at: 1,
-      updated_user_id: userId,
-      updated_at: getNowTimeStamp()
-    });
+    return this.ssh.update(
+      {
+        ssh_id: sshId,
+        deleted_at: 0,
+      },
+      {
+        deleted_at: 1,
+        updated_user_id: userId,
+        updated_at: getNowTimeStamp(),
+      },
+    );
   }
-
 }
