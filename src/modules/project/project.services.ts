@@ -63,6 +63,8 @@ export class ProjectService {
       const newProject = transactionalEntityManager.create(ProjectEntity);
       newProject.user_id = userId;
       newProject.name = dto.name;
+      newProject.desc = dto.desc;
+      newProject.upload_floder = dto.upload_floder;
       newProject.repository_name = repositoryName;
       newProject.git_path = dto.git_path;
       newProject.created_at = now;
@@ -123,6 +125,8 @@ export class ProjectService {
       }
 
       if (dto.name) project.name = dto.name;
+      if (dto.desc) project.desc = dto.desc;
+      if (dto.upload_floder) project.upload_floder = dto.upload_floder;
       project.updated_user_id = userId;
 
       // 先全部删掉
@@ -180,7 +184,6 @@ export class ProjectService {
     environment.name = dto.name;
     environment.branch = dto.branch;
     environment.variables = dto.variables;
-    environment.public_path = dto.public_path;
     environment.ssh_id = dto.ssh_id;
     environment.name = dto.name;
     environment.created_at = now;
@@ -210,7 +213,7 @@ export class ProjectService {
       .leftJoin('project.members', 'members')
       .leftJoinAndSelect('project.environments', 'environments')
       .where('project.deleted_at = :deleted_at', { deleted_at: 0 })
-      .where('environments.deleted_at = :deleted_at', { deleted_at: 0 })
+      .andWhere('environments.deleted_at = :deleted_at', { deleted_at: 0 })
       .andWhere('members.user_id = :user_id', { user_id: userId })
       .orderBy({
         'project.created_at': 'DESC',

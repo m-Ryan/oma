@@ -56,13 +56,6 @@ export class ProjectEnvironmentEntity {
 
   @Column({
     type: 'varchar',
-    length: 255,
-    default: '',
-  })
-  public_path: string;
-
-  @Column({
-    type: 'varchar',
     default: '',
   })
   variables: string;

@@ -12,15 +12,15 @@ import chalk from 'chalk';
 import { decrypt } from '../utils/crypto';
 import { Omafile } from '../typing/omafile';
 import fs from 'fs-extra';
-import shelljs from 'shelljs';
 import { ProjectTaskEntity } from '../modules/project_task/entities/project_task.entity';
 import { runExec } from '../utils/shell';
+import { NotAcceptableException } from '@nestjs/common';
 
 export async function createBuildPipline(options: {
   task: ProjectTaskEntity;
   onProgress: (log: string) => void;
-  onSuccess: () => void;
-  onError: (error: string) => void;
+  onSuccess: (information: string) => void;
+  onError: (information: string) => void;
 }) {
   const {
     task,
@@ -34,11 +34,17 @@ export async function createBuildPipline(options: {
   const projectDir = getRepositoryName(project.git_path);
   const repositoryPath = path.join(REPOSITORY_DIR, projectDir);
   const deploymentDir = path.join(DEPLOYMENT_DIR, projectDir);
+  const information: string[] = [];
   try {
     // stage fetch
-    shelljs.cd(repositoryPath);
-    shelljs.exec(`git fetch --no-tags --force --progress`);
-    shelljs.exec(`git checkout -f ${task.version}`);
+    await runExec(`git fetch --no-tags --force --progress`, {
+      cwd: repositoryPath,
+      onProgress: data => information.push(data),
+    });
+    await runExec(`git checkout -f ${task.version}`, {
+      cwd: repositoryPath,
+      onProgress: data => information.push(data),
+    });
     let omafile: Omafile;
     try {
       omafile = await fs.readJSON(path.join(repositoryPath, 'omafile.json'));
@@ -48,44 +54,58 @@ export async function createBuildPipline(options: {
     }
     if (!omafile) return onError('该项目没有配置 omafile.json');
 
-    await runStage(omafile.stages.fetch, repositoryPath);
+    information.push(...(await runStage(omafile.stages.fetch, repositoryPath)));
 
     // stage build
     if (!(await existsDir(deploymentDir))) {
       await mkdir(deploymentDir);
     }
 
-    shelljs.exec(`nvm install ${omafile.node} && nvm use ${omafile.node}`);
-    await runStage(omafile.stages.build, repositoryPath);
+    await runExec(`nvm install ${omafile.node} && nvm use ${omafile.node}`, {
+      onProgress: data => information.push(data),
+    });
+    information.push(...(await runStage(omafile.stages.build, repositoryPath)));
 
     // 打包
     const tarName = getTaskTarName(task);
-    shelljs.exec(
-      `cd ${deploymentDir} && tar -zcf ${tarName} -C ${path.join(
+    await runExec(
+      `tar -zcf ${tarName} -C ${path.join(
         repositoryPath,
         omafile.uploadDir,
       )} .`,
+      {
+        cwd: deploymentDir,
+        onProgress: data => information.push(data),
+      },
     );
 
     if (project_env.auto_deploy) {
       await pushToServer(task);
     }
 
-    onSuccess();
+    onSuccess(information.join(''));
   } catch (error) {
     console.log(error);
-    onError(error.message || error.toString());
+    onError(information.join(''));
   }
 }
 
 export async function pushToServer(task: ProjectTaskEntity) {
   const {
-    project,
-    project_env,
-    project_env: { ssh },
+    project_env: { ssh, project },
   } = task;
   const projectDir = getRepositoryName(project.git_path);
+  const repositoryPath = path.join(REPOSITORY_DIR, projectDir);
   const deploymentDir = path.join(DEPLOYMENT_DIR, projectDir);
+
+  let omafile: Omafile;
+  try {
+    omafile = await fs.readJSON(path.join(repositoryPath, 'omafile.json'));
+  } catch (error) {
+    console.log(error);
+  }
+  if (!omafile) throw new NotAcceptableException('该项目没有配置 omafile.json');
+
   // push to server
   const connectOptions: Partial<SSHEntity> = {
     host: ssh.host,
@@ -101,8 +121,8 @@ export async function pushToServer(task: ProjectTaskEntity) {
   const conn = await getSSHInstance(connectOptions);
   console.log(chalk.yellow('正在进行上传到服务器----'));
 
-  if (!project_env.public_path) {
-    throw new Error('project_env.public_path 不能为空');
+  if (!project.upload_floder) {
+    throw new Error('上传目录不能为空');
   }
   const tarName = getTaskTarName(task);
   await new Promise(async (resolve, reject) => {
@@ -113,14 +133,16 @@ export async function pushToServer(task: ProjectTaskEntity) {
       console.log('正在上传', tempPath);
       await conn.uploadFile(tarPath, tempPath);
       await conn.execComand(
-        `rm -rf ${project_env.public_path} && mkdir -p ${project_env.public_path}`,
+        `rm -rf ${project.upload_floder} && mkdir -p ${project.upload_floder}`,
       );
       console.log('正在解压');
       await conn.execComand(
-        `tar -zxPf ${tempPath} -C ${project_env.public_path}`,
+        `tar -zxPf ${tempPath} -C ${project.upload_floder}`,
       );
       await conn.execComand(`rm -rf ${tempPath}`);
       console.log('上传成功');
+
+      await runStage(omafile.stages.deploy, repositoryPath);
       resolve();
     } catch (error) {
       console.log('error', error);
@@ -132,15 +154,20 @@ export async function pushToServer(task: ProjectTaskEntity) {
 }
 
 async function runStage(stage: string | string[], cwd: string) {
+  const information: string[] = [];
+  if (!stage) return information;
   if (Array.isArray(stage)) {
     for await (const step of stage) {
       await runExec(step, {
         cwd,
+        onProgress: data => information.push(data),
       });
     }
   } else {
     await runExec(stage, {
       cwd,
+      onProgress: data => information.push(data),
     });
   }
+  return information;
 }

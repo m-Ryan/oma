@@ -1,6 +1,5 @@
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, getManager } from 'typeorm';
-import shelljs from 'shelljs';
+import { Repository, getManager, FindConditions } from 'typeorm';
 import path from 'path';
 import { SSHEntity, SSHType } from './entities/ssh.entity';
 import {
@@ -11,7 +10,6 @@ import {
 } from '../../utils/util';
 import {
   Injectable,
-  BadRequestException,
   NotFoundException,
   NotAcceptableException,
 } from '@nestjs/common';
@@ -23,9 +21,12 @@ import {
 } from './entities/project_task.entity';
 import { ProjectEnvironmentEntity } from '../project/entities/project_environment.entity';
 import { UpdateTaskDTO } from './dto/update-task.dto';
-import { REPOSITORY_DIR } from '../../constant';
+import { REPOSITORY_DIR, successResponse } from '../../constant';
 import { runExec } from '../../utils/shell';
 import { ProjectSchedule } from '../../deployment/ProjectSchedule';
+import { PlaybackDTO } from './dto/playback.dto';
+import { ReleaseDto } from './dto/push.dto';
+import { pushToServer } from '../../deployment/ProjectTask';
 
 @Injectable({
   scope: 1,
@@ -50,11 +51,15 @@ export class ProjectTaskService {
         project_env_id: projectEnvId,
         deleted_at: 0,
       },
-      relations: ['project'],
+      relations: ['project', 'ssh'],
     });
 
     if (!environment) {
       throw new NotFoundException('分支配置不存在');
+    }
+
+    if (environment.project.deleted_at > 0) {
+      throw new NotFoundException('项目不存在');
     }
 
     const projectDir = getRepositoryName(environment.project.git_path);
@@ -90,10 +95,82 @@ export class ProjectTaskService {
     newTask.updated_at = getNowTimeStamp();
     newTask.project_env_id = environment.project_env_id;
     newTask.project_id = environment.project_id;
+    newTask.infomation = '正在构建';
     await this.pjt.save(newTask);
     newTask.project_env = environment;
     this.ps.createTask(newTask);
     return newTask;
+  }
+
+  async playback(taskId: number) {
+    const oldTask = await this.pjt.findOne({
+      task_id: taskId,
+      deleted_at: 0,
+    });
+
+    if (!oldTask) {
+      throw new NotFoundException('回放任务不存在');
+    }
+
+    const environment = await this.pje.findOne({
+      where: {
+        project_env_id: oldTask.project_env_id,
+        deleted_at: 0,
+      },
+      relations: ['project', 'ssh'],
+    });
+
+    if (!environment) {
+      throw new NotFoundException('回放任务未配置环境');
+    }
+
+    const newTask = this.pjt.create();
+    newTask.repository = oldTask.repository;
+    newTask.branch = oldTask.branch;
+    newTask.commit = oldTask.commit;
+    newTask.version = oldTask.version;
+    newTask.status = ProjectTaskEntityStatus.PENDING;
+    newTask.created_at = getNowTimeStamp();
+    newTask.updated_at = getNowTimeStamp();
+    newTask.project_env_id = oldTask.project_env_id;
+    newTask.project_id = oldTask.project_id;
+    newTask.infomation = '正在构建';
+    this.pjt.save(newTask);
+    newTask.project_env = environment;
+    this.ps.createTask(newTask);
+    return newTask;
+  }
+
+  async release(taskId: number) {
+    const task = await this.pjt.findOne({
+      task_id: taskId,
+      deleted_at: 0,
+    });
+
+    if (!task) {
+      throw new NotFoundException('回放任务不存在');
+    }
+
+    if (task.status !== ProjectTaskEntityStatus.SUCCESS) {
+      throw new NotAcceptableException('只有构建成功的版本才能发布');
+    }
+
+    const environment = await this.pje.findOne({
+      where: {
+        project_env_id: task.project_env_id,
+        deleted_at: 0,
+      },
+      relations: ['project', 'ssh'],
+    });
+
+    if (!environment) {
+      throw new NotFoundException('回放任务未配置环境');
+    }
+
+    task.project_env = environment;
+
+    await pushToServer(task);
+    return successResponse;
   }
 
   async push(dto: CreateTaskDTO) {
@@ -130,6 +207,7 @@ export class ProjectTaskService {
     newTask.project_env_id = env.project_env_id;
     newTask.project_env = env;
     newTask.project_id = project.project_id;
+    newTask.infomation = '---';
     return this.pjt.save(newTask);
   }
 
@@ -142,20 +220,20 @@ export class ProjectTaskService {
     });
 
     task.updated_at = getNowTimeStamp();
-    task.status = ProjectTaskEntityStatus.SUCCESS;
-    if (dto.errMsg) {
-      task.err_msg = dto.errMsg;
-      task.status = ProjectTaskEntityStatus.ERROR;
-    }
+    task.status = dto.status;
+    task.infomation = dto.infomation;
     return this.pjt.save(task);
   }
 
   async getList(id: number, page: number, size: number) {
+    const condition: FindConditions<ProjectEntity> = {
+      deleted_at: 0,
+    };
+    if (id) {
+      condition.project_id = id;
+    }
     const data = await this.pjt.findAndCount({
-      where: {
-        deleted_at: 0,
-        project_id: id,
-      },
+      where: condition,
       take: size,
       skip: getSkip(page, size),
       order: {

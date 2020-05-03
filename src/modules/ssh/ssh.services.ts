@@ -23,6 +23,19 @@ export class SSHService {
     };
 
     const data = await this.ssh.findAndCount({
+      select: [
+        'ssh_id',
+        'name',
+        'host',
+        'port',
+        'username',
+        'created_at',
+        'user_id',
+        'updated_user_id',
+        'type',
+        'updated_at',
+        'deleted_at',
+      ],
       where: condition,
       take: size,
       skip: getSkip(page, size),
@@ -30,6 +43,8 @@ export class SSHService {
         created_at: 'DESC',
       },
     });
+    const response = formatListResponse(data);
+    // response.list.forEach(item=)
     return formatListResponse(data);
   }
 
@@ -66,39 +81,24 @@ export class SSHService {
     if (!ssh) {
       throw new NotFoundException('ssh 不存在');
     }
-    const updateColumn: QueryDeepPartialEntity<SSHEntity> = {};
-    if (dto.name) updateColumn.name = dto.name;
-    if (dto.host) updateColumn.host = dto.host;
-    if (dto.port) updateColumn.port = dto.port;
-    if (dto.username) updateColumn.username = dto.username;
+    if (dto.name) ssh.name = dto.name;
+    if (dto.host) ssh.host = dto.host;
+    if (dto.port) ssh.port = dto.port;
+    if (dto.username) ssh.username = dto.username;
 
-    if (dto.type !== ssh.type) {
-      if (dto.type === SSHType.PWD) {
-        if (!dto.password) {
-          throw new BadRequestException('password 不能为空');
-        }
-        updateColumn.password = encrypt(dto.password);
-        updateColumn.type = SSHType.PWD;
-      } else {
-        if (!dto.privateKey) {
-          throw new BadRequestException('privateKey 不能为空');
-        }
-        updateColumn.privateKey = encrypt(dto.privateKey);
-        updateColumn.type = SSHType.PRIVATE_KEY;
+    if (dto.type === SSHType.PWD) {
+      if (dto.password) {
+        ssh.password = encrypt(dto.password);
+        ssh.type = SSHType.PWD;
+      }
+    } else {
+      if (dto.privateKey) {
+        ssh.privateKey = encrypt(dto.privateKey);
+        ssh.type = SSHType.PRIVATE_KEY;
       }
     }
 
-    return this.ssh.update(
-      {
-        ssh_id: sshId,
-        deleted_at: 0,
-      },
-      {
-        ...updateColumn,
-        updated_user_id: userId,
-        updated_at: getNowTimeStamp(),
-      },
-    );
+    return this.ssh.save(ssh);
   }
 
   async remove(sshId: number, userId: number) {

@@ -14,6 +14,7 @@ import { AuthGuard } from '../../common/guards/auth.guard';
 import { AdminGuard } from '../../common/guards/admin.guard';
 import { CreateTaskDTO } from './dto/create-task.dto';
 import { UpdateTaskDTO } from './dto/update-task.dto';
+import { PlaybackDTO } from './dto/playback.dto';
 
 // @UseGuards(AuthGuard)
 @Controller('project-task')
@@ -24,7 +25,7 @@ export class ProjectTaskController {
   getList(
     @Query('page', new ParseIntPipe()) page: number,
     @Query('size', new ParseIntPipe()) size: number,
-    @Query('id', new ParseIntPipe()) id: number,
+    @Query('id') id: number,
   ) {
     return this.service.getList(id, page, size);
   }
@@ -39,6 +40,16 @@ export class ProjectTaskController {
     return this.service.push(dto);
   }
 
+  @Post('playback')
+  playback(@Query('task_id') taskId: number) {
+    return this.service.playback(taskId);
+  }
+
+  @Post('release')
+  release(@Query('task_id') taskId: number) {
+    return this.service.release(taskId);
+  }
+
   @Post('update')
   @UseGuards(AdminGuard)
   update(
@@ -47,10 +58,4 @@ export class ProjectTaskController {
   ) {
     return this.service.update(taskId, dto);
   }
-
-  // @Post('remove')
-  // @UseGuards(AdminGuard)
-  // getDeleteDeploy(@Query('ssh_id', new ParseIntPipe()) sshId: number, @Headers('user_id') userId: number) {
-  //   return this.service.remove(sshId, userId);
-  // }
 }

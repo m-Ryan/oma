@@ -1,5 +1,8 @@
 import { createBuildPipline } from './ProjectTask';
-import { ProjectTaskEntity } from '../modules/project_task/entities/project_task.entity';
+import {
+  ProjectTaskEntity,
+  ProjectTaskEntityStatus,
+} from '../modules/project_task/entities/project_task.entity';
 import { ProjectTaskService } from '../modules/project_task/project_task.services';
 
 export class ProjectSchedule {
@@ -30,11 +33,19 @@ export class ProjectSchedule {
           onProgress: logs => {
             console.log(logs);
           },
-          onSuccess: () => {
-            this.onTaskOver({ task });
+          onSuccess: infomation => {
+            this.onTaskOver({
+              task,
+              infomation,
+              status: ProjectTaskEntityStatus.SUCCESS,
+            });
           },
-          onError: errMsg => {
-            this.onTaskOver({ task, errMsg });
+          onError: infomation => {
+            this.onTaskOver({
+              task,
+              infomation,
+              status: ProjectTaskEntityStatus.ERROR,
+            });
           },
         });
       });
@@ -43,12 +54,14 @@ export class ProjectSchedule {
 
   async onTaskOver({
     task,
-    errMsg,
+    infomation,
+    status,
   }: {
     task: ProjectTaskEntity;
-    errMsg?: string;
+    infomation: string;
+    status: ProjectTaskEntityStatus;
   }) {
-    this.service.update(task.task_id, { errMsg });
+    this.service.update(task.task_id, { infomation, status });
     this.taskBuildQueue = this.taskBuildQueue.filter(item => item !== task);
   }
 }

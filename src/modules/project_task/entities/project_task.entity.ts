@@ -72,11 +72,9 @@ export class ProjectTaskEntity {
   commit: string;
 
   @Column({
-    type: 'varchar',
-    length: 255,
-    default: '',
+    type: 'text',
   })
-  err_msg: string;
+  infomation: string;
 
   @Column({
     type: 'smallint',

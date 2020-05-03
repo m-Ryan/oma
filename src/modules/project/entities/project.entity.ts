@@ -1,13 +1,4 @@
-import {
-  Entity,
-  Column,
-  PrimaryGeneratedColumn,
-  BaseEntity,
-  getConnection,
-  OneToOne,
-  JoinColumn,
-  OneToMany
-} from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, OneToMany } from 'typeorm';
 
 import { ProjectEnvironmentEntity } from './project_environment.entity';
 import { ProjectMemberEntity } from './project_member.entity';
@@ -16,70 +7,82 @@ import { ProjectMemberEntity } from './project_member.entity';
 export class ProjectEntity {
   @PrimaryGeneratedColumn({
     type: 'int',
-  }) project_id: number;
+  })
+  project_id: number;
 
   @Column({
     type: 'varchar',
 
-    default: ''
+    default: '',
   })
   name: string;
 
   @Column({
     type: 'varchar',
 
-    default: ''
+    default: '',
   })
   repository_name: string;
 
   @Column({
     type: 'varchar',
     length: 255,
-    default: ''
+    default: '',
   })
   git_path: string;
 
   @Column({
     type: 'varchar',
     length: 255,
-    default: ''
+    default: '',
   })
   desc: string;
 
   @Column({
     type: 'int',
-    default: 0
+    default: 0,
   })
   created_at: number;
 
   @Column({
     type: 'int',
-    default: 0
+    default: 0,
   })
   user_id: number;
 
   @Column({
+    type: 'varchar',
+    default: '',
+  })
+  upload_floder: string;
+
+  @Column({
     type: 'int',
-    default: 0
+    default: 0,
   })
   updated_at: number;
 
   @Column({
     type: 'int',
-    default: 0
+    default: 0,
   })
   updated_user_id: number;
 
   @Column({
     type: 'int',
-    default: 0
+    default: 0,
   })
   deleted_at: number;
 
-  @OneToMany((type) => ProjectEnvironmentEntity, (ProjectEnvironmentEntity) => ProjectEnvironmentEntity.project)
+  @OneToMany(
+    type => ProjectEnvironmentEntity,
+    ProjectEnvironmentEntity => ProjectEnvironmentEntity.project,
+  )
   environments: ProjectEnvironmentEntity[];
 
-  @OneToMany((type) => ProjectMemberEntity, (ProjectMemberEntity) => ProjectMemberEntity.project)
+  @OneToMany(
+    type => ProjectMemberEntity,
+    ProjectMemberEntity => ProjectMemberEntity.project,
+  )
   members: ProjectMemberEntity[];
-
 }
