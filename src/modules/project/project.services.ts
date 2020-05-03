@@ -1,16 +1,8 @@
 import { InjectRepository } from '@nestjs/typeorm';
 import { ProjectEntity } from './entities/project.entity';
-import {
-  Repository,
-  getManager,
-  createQueryBuilder,
-  FindManyOptions,
-  In,
-  FindConditions,
-} from 'typeorm';
+import { Repository, getManager } from 'typeorm';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { ProjectEnvironmentEntity } from './entities/project_environment.entity';
-import { ProjectSchedule } from '../../deployment/ProjectSchedule';
 import {
   getNowTimeStamp,
   getRepositoryName,
@@ -18,7 +10,6 @@ import {
   formatListResponse,
   getSkip,
 } from '../../utils/util';
-import { encrypt } from '../../utils/crypto';
 import {
   NotAcceptableException,
   Injectable,
@@ -31,7 +22,6 @@ import {
   ProjectMemberRole,
   ProjectMemberEntity,
 } from './entities/project_member.entity';
-import { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
 import { CreateProjectEnvironmentDto } from './dto/create-project-env';
 import { UpdateProjectDto } from './dto/update-project.dto';
 
@@ -52,9 +42,9 @@ export class ProjectService {
         git_path: dto.git_path,
         deleted_at: 0,
       });
-      // if (project) {
-      //   throw new NotAcceptableException('该项目已存在，创建失败');
-      // }
+      if (project) {
+        throw new NotAcceptableException('该项目已存在，创建失败');
+      }
 
       const repositoryName = getRepositoryName(dto.git_path);
       if (!(await existsDir(repositoryName))) {
@@ -135,15 +125,23 @@ export class ProjectService {
       if (dto.name) project.name = dto.name;
       project.updated_user_id = userId;
 
-      await transactionalEntityManager.delete(ProjectEnvironmentEntity, {
-        where: {
-          project_env_id: In(dto.environments.map(item => item.project_env_id)),
+      // 先全部删掉
+      await transactionalEntityManager.update(
+        ProjectEnvironmentEntity,
+        {
+          project_id: projectId,
         },
-      });
+        {
+          deleted_at: getNowTimeStamp(),
+        },
+      );
 
       dto.environments.forEach(item => {
+        if (!item.project_env_id) {
+          delete item.project_env_id;
+        }
+        item.deleted_at = 0;
         item.project_id = project.project_id;
-        delete item.project_env_id;
       });
 
       await transactionalEntityManager.save(
@@ -212,6 +210,7 @@ export class ProjectService {
       .leftJoin('project.members', 'members')
       .leftJoinAndSelect('project.environments', 'environments')
       .where('project.deleted_at = :deleted_at', { deleted_at: 0 })
+      .where('environments.deleted_at = :deleted_at', { deleted_at: 0 })
       .andWhere('members.user_id = :user_id', { user_id: userId })
       .orderBy({
         'project.created_at': 'DESC',
@@ -221,20 +220,4 @@ export class ProjectService {
       .getManyAndCount();
     return formatListResponse(data);
   }
-
-  // async getHistoryList(page: number, size: number, userId: number, projectId?: number) {
-
-  //   const condition: QueryDeepPartialEntity<ProjectTaskEntity> = {
-  //     deleted_at: 0,
-  //   };
-  //   if (projectId) {
-  //     condition.project_id = projectId;
-  //   }
-  //   const data = await this.pjt.findAndCount({
-  //     where: condition,
-  //     take: size,
-  //     skip: getSkip(page, size)
-  //   });
-  //   return formatListResponse(data);
-  // }
 }
