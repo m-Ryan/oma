@@ -9,10 +9,11 @@ import { ProjectEntity } from '../../project/entities/project.entity';
 import { ProjectEnvironmentEntity } from '../../project/entities/project_environment.entity';
 
 export enum ProjectTaskEntityStatus {
-  PENDING = 0,
-  SUCCESS = 1,
-  ERROR = 2,
-  OVERWRITE = 3,
+  PENDING = 1,
+  DOING = 2,
+  SUCCESS = 3,
+  ERROR = 4,
+  OVERWRITE = 5,
 }
 
 @Entity('project_task')
@@ -26,19 +27,19 @@ export class ProjectTaskEntity {
 
   @Column({
     type: 'int',
-    default: 0
+    default: 0,
   })
   user_id: number;
 
   @Column({
     type: 'int',
-    default: 0
+    default: 0,
   })
   project_id: number;
 
   @Column({
     type: 'int',
-    default: 0
+    default: 0,
   })
   ssh_id: number;
 
@@ -79,9 +80,9 @@ export class ProjectTaskEntity {
 
   @Column({
     type: 'smallint',
-    default: 0,
   })
   status: ProjectTaskEntityStatus;
+
   @Column({
     type: 'int',
     default: 0,
@@ -113,5 +114,4 @@ export class ProjectTaskEntity {
   )
   @JoinColumn({ name: 'project_env_id' })
   project_env: ProjectEnvironmentEntity;
-
 }

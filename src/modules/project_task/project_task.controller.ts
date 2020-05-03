@@ -13,6 +13,7 @@ import { ProjectTaskService } from './project_task.services';
 import { AuthGuard } from '../../common/guards/auth.guard';
 import { AdminGuard } from '../../common/guards/admin.guard';
 import { CreateTaskDTO } from './dto/create-task.dto';
+import { UpdateTaskDTO } from './dto/update-task.dto';
 
 // @UseGuards(AuthGuard)
 @Controller('project-task')
@@ -29,8 +30,8 @@ export class ProjectTaskController {
   }
 
   @Post('create')
-  create(@Body() project_env_id: number) {
-    return this.service.create(project_env_id);
+  create(@Body() dto: { project_env_id: number }) {
+    return this.service.create(dto.project_env_id);
   }
 
   @Post('push')
@@ -38,11 +39,14 @@ export class ProjectTaskController {
     return this.service.push(dto);
   }
 
-  // @Post('update')
-  // @UseGuards(AdminGuard)
-  // update(@Query('ssh_id', new ParseIntPipe()) sshId: number, @Body() dto: Partial<CreateDeployConfigDto>, @Headers('user_id') userId: number) {
-  //   return this.service.update(sshId, dto, userId);
-  // }
+  @Post('update')
+  @UseGuards(AdminGuard)
+  update(
+    @Query('task_id', new ParseIntPipe()) taskId: number,
+    @Body() dto: UpdateTaskDTO,
+  ) {
+    return this.service.update(taskId, dto);
+  }
 
   // @Post('remove')
   // @UseGuards(AdminGuard)

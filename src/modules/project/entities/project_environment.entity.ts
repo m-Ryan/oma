@@ -6,99 +6,109 @@ import {
   ManyToOne,
   OneToOne,
   OneToMany,
-  JoinColumn
+  JoinColumn,
 } from 'typeorm';
 
 import { ProjectEntity } from './project.entity';
-import { ProjectTaskEntityStatus, ProjectTaskEntity } from '../../project_task/entities/project_task.entity';
+import {
+  ProjectTaskEntityStatus,
+  ProjectTaskEntity,
+} from '../../project_task/entities/project_task.entity';
 import { SSHEntity } from '../../ssh/entities/ssh.entity';
-
 
 @Entity('project_environment')
 export class ProjectEnvironmentEntity {
   @PrimaryGeneratedColumn({
     type: 'int',
-  }) project_env_id: number;
+  })
+  project_env_id: number;
 
   @Column({
     type: 'int',
-    default: 0
+    default: 0,
   })
   project_id: number;
 
   @Column({
     type: 'varchar',
 
-    default: ''
+    default: '',
   })
   name: string;
 
   @Column({
     type: 'int',
-    default: 0
+    default: 0,
   })
   user_id: number;
 
   @Column({
     type: 'int',
-    default: 0
+    default: 0,
   })
   ssh_id: number;
 
   @Column({
     type: 'tinyint',
-    default: 0
+    default: 0,
   })
   auto_deploy: number;
 
   @Column({
     type: 'varchar',
     length: 255,
-    default: ''
+    default: '',
   })
   public_path: string;
 
   @Column({
     type: 'varchar',
-    default: ''
+    default: '',
   })
   variables: string;
 
   @Column({
     type: 'varchar',
     length: 255,
-    default: ''
+    default: '',
   })
   branch: string;
 
   @Column({
     type: 'int',
-    default: 0
+    default: 0,
   })
   created_at: number;
 
-
   @Column({
     type: 'int',
-    default: 0
+    default: 0,
   })
   updated_at: number;
 
   @Column({
     type: 'int',
-    default: 0
+    default: 0,
   })
   deleted_at: number;
 
-  @OneToMany((type) => ProjectTaskEntity, (ProjectTaskEntity) => ProjectTaskEntity.project_env)
+  @OneToMany(
+    type => ProjectTaskEntity,
+    ProjectTaskEntity => ProjectTaskEntity.project_env,
+  )
   tasks: ProjectTaskEntityStatus[];
 
-  @ManyToOne((type) => ProjectEntity, (ProjectEntity) => ProjectEntity.environments)
+  @ManyToOne(
+    type => ProjectEntity,
+    ProjectEntity => ProjectEntity.environments,
+  )
   @JoinColumn({ name: 'project_id' })
   project: ProjectEntity;
 
-  @ManyToOne((type) => SSHEntity, (SSHEntity) => SSHEntity.ssh_id)
+  @ManyToOne(
+    type => SSHEntity,
+    SSHEntity => SSHEntity.ssh_id,
+  )
   @JoinColumn({ name: 'ssh_id' })
   ssh: SSHEntity;
-
 }

@@ -6,6 +6,7 @@ import { SSHEntity } from './entities/ssh.entity';
 import { ProjectEntity } from '../project/entities/project.entity';
 import { ProjectTaskEntity } from './entities/project_task.entity';
 import { ProjectEnvironmentEntity } from '../project/entities/project_environment.entity';
+import { ProjectSchedule } from '../../deployment/ProjectSchedule';
 
 @Module({
   imports: [
@@ -17,6 +18,6 @@ import { ProjectEnvironmentEntity } from '../project/entities/project_environmen
     ]),
   ],
   controllers: [ProjectTaskController],
-  providers: [ProjectTaskService],
+  providers: [ProjectTaskService, ProjectSchedule],
 })
 export class ProjectTaskModule {}

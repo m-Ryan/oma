@@ -12,8 +12,9 @@ import chalk from 'chalk';
 import { decrypt } from '../utils/crypto';
 import { Omafile } from '../typing/omafile';
 import fs from 'fs-extra';
-import shelljs, { env } from 'shelljs';
+import shelljs from 'shelljs';
 import { ProjectTaskEntity } from '../modules/project_task/entities/project_task.entity';
+import { runExec } from '../utils/shell';
 
 export async function createBuildPipline(options: {
   task: ProjectTaskEntity;
@@ -21,7 +22,15 @@ export async function createBuildPipline(options: {
   onSuccess: () => void;
   onError: (error: string) => void;
 }) {
-  const { task, task: { project, project_env, project_env: { ssh } }, onError, onSuccess } = options;
+  const {
+    task,
+    task: {
+      project_env,
+      project_env: { project },
+    },
+    onError,
+    onSuccess,
+  } = options;
   const projectDir = getRepositoryName(project.git_path);
   const repositoryPath = path.join(REPOSITORY_DIR, projectDir);
   const deploymentDir = path.join(DEPLOYMENT_DIR, projectDir);
@@ -37,11 +46,11 @@ export async function createBuildPipline(options: {
       console.log(error);
       onError('该项目没有配置 omafile.json');
     }
-    if (!omafile) return;
+    if (!omafile) return onError('该项目没有配置 omafile.json');
 
     await runStage(omafile.stages.fetch, repositoryPath);
 
-    // stage build 
+    // stage build
     if (!(await existsDir(deploymentDir))) {
       await mkdir(deploymentDir);
     }
@@ -51,7 +60,12 @@ export async function createBuildPipline(options: {
 
     // 打包
     const tarName = getTaskTarName(task);
-    shelljs.exec(`cd ${deploymentDir} && tar -zcf ${tarName} -C ${path.join(repositoryPath, omafile.uploadDir)} .`);
+    shelljs.exec(
+      `cd ${deploymentDir} && tar -zcf ${tarName} -C ${path.join(
+        repositoryPath,
+        omafile.uploadDir,
+      )} .`,
+    );
 
     if (project_env.auto_deploy) {
       await pushToServer(task);
@@ -65,11 +79,14 @@ export async function createBuildPipline(options: {
 }
 
 export async function pushToServer(task: ProjectTaskEntity) {
-
-  const { project, project_env, project_env: { ssh } } = task;
+  const {
+    project,
+    project_env,
+    project_env: { ssh },
+  } = task;
   const projectDir = getRepositoryName(project.git_path);
   const deploymentDir = path.join(DEPLOYMENT_DIR, projectDir);
-  // push to server 
+  // push to server
   const connectOptions: Partial<SSHEntity> = {
     host: ssh.host,
     port: ssh.port,
@@ -95,9 +112,13 @@ export async function pushToServer(task: ProjectTaskEntity) {
       const tempPath = '/tmp/' + tarName;
       console.log('正在上传', tempPath);
       await conn.uploadFile(tarPath, tempPath);
-      await conn.execComand(`rm -rf ${project_env.public_path} && mkdir -p ${project_env.public_path}`);
+      await conn.execComand(
+        `rm -rf ${project_env.public_path} && mkdir -p ${project_env.public_path}`,
+      );
       console.log('正在解压');
-      await conn.execComand(`tar -zxPf ${tempPath} -C ${project_env.public_path}`);
+      await conn.execComand(
+        `tar -zxPf ${tempPath} -C ${project_env.public_path}`,
+      );
       await conn.execComand(`rm -rf ${tempPath}`);
       console.log('上传成功');
       resolve();
@@ -108,17 +129,18 @@ export async function pushToServer(task: ProjectTaskEntity) {
   });
 
   conn.end();
-
 }
 
-
 async function runStage(stage: string | string[], cwd: string) {
-  shelljs.cd(cwd);
   if (Array.isArray(stage)) {
     for await (const step of stage) {
-      shelljs.exec(step);
+      await runExec(step, {
+        cwd,
+      });
     }
   } else {
-    shelljs.exec(stage);
+    await runExec(stage, {
+      cwd,
+    });
   }
 }

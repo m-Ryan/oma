@@ -6,5 +6,5 @@ export class UpdateProjectDto {
   readonly name: string;
   @IsString()
   readonly git_path: string;
-  readonly environments: ProjectEnvironmentEntity;
+  readonly environments: ProjectEnvironmentEntity[];
 }

@@ -1,15 +1,20 @@
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, getManager } from 'typeorm';
+import shelljs from 'shelljs';
+import path from 'path';
 import { SSHEntity, SSHType } from './entities/ssh.entity';
-import { getNowTimeStamp, formatListResponse, getSkip } from '../../utils/util';
-import { encrypt } from '../../utils/crypto';
+import {
+  getNowTimeStamp,
+  formatListResponse,
+  getSkip,
+  getRepositoryName,
+} from '../../utils/util';
 import {
   Injectable,
   BadRequestException,
   NotFoundException,
   NotAcceptableException,
 } from '@nestjs/common';
-import { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
 import { CreateTaskDTO } from './dto/create-task.dto';
 import { ProjectEntity } from '../project/entities/project.entity';
 import {
@@ -18,8 +23,13 @@ import {
 } from './entities/project_task.entity';
 import { ProjectEnvironmentEntity } from '../project/entities/project_environment.entity';
 import { UpdateTaskDTO } from './dto/update-task.dto';
+import { REPOSITORY_DIR } from '../../constant';
+import { runExec } from '../../utils/shell';
+import { ProjectSchedule } from '../../deployment/ProjectSchedule';
 
-@Injectable()
+@Injectable({
+  scope: 1,
+})
 export class ProjectTaskService {
   constructor(
     @InjectRepository(SSHEntity) private readonly ssh: Repository<SSHEntity>,
@@ -29,20 +39,61 @@ export class ProjectTaskService {
     private readonly pj: Repository<ProjectEntity>,
     @InjectRepository(ProjectEnvironmentEntity)
     private readonly pje: Repository<ProjectEnvironmentEntity>,
-  ) {}
+    private readonly ps: ProjectSchedule,
+  ) {
+    this.ps = new ProjectSchedule(this);
+  }
 
   async create(projectEnvId: number) {
     const environment = await this.pje.findOne({
-      project_env_id: projectEnvId,
-      deleted_at: 0,
+      where: {
+        project_env_id: projectEnvId,
+        deleted_at: 0,
+      },
+      relations: ['project'],
     });
 
     if (!environment) {
       throw new NotFoundException('分支配置不存在');
     }
 
-    const task = this.pjt.create();
-    task.branch = environment.branch;
+    const projectDir = getRepositoryName(environment.project.git_path);
+    const repositoryPath = path.join(REPOSITORY_DIR, projectDir);
+    const commit = await new Promise<{
+      version: string;
+      author: string;
+      date: string;
+      message: string;
+    }>((resolve, reject) => {
+      return runExec(
+        `git log -1 --date=iso --pretty=format:'{"version": "%h","author": "%aN <%aE>","date": "%ad","message": "%s"}' ${environment.branch} --`,
+        {
+          cwd: repositoryPath,
+          onProgress: data => resolve(JSON.parse(data)),
+          onEnd: () =>
+            reject(
+              new NotFoundException(
+                `分支不存在， bad revision ${environment.branch}`,
+              ),
+            ),
+          onError: err => reject(err),
+        },
+      );
+    });
+    const newTask = this.pjt.create();
+    newTask.repository = environment.project.repository_name;
+    newTask.branch = environment.branch;
+    newTask.commit = commit.message;
+    newTask.version = commit.version;
+    newTask.status = ProjectTaskEntityStatus.PENDING;
+    newTask.created_at = getNowTimeStamp();
+    newTask.updated_at = getNowTimeStamp();
+    newTask.project_env_id = environment.project_env_id;
+    newTask.project_id = environment.project_id;
+    await this.pjt.save(newTask);
+    newTask.project_env = environment;
+    this.ps.createTask(newTask);
+    return newTask;
   }
 
   async push(dto: CreateTaskDTO) {
@@ -82,7 +133,7 @@ export class ProjectTaskService {
     return this.pjt.save(newTask);
   }
 
-  async updateTask(taskId: number, dto: UpdateTaskDTO) {
+  async update(taskId: number, dto: UpdateTaskDTO) {
     const task = await this.pjt.findOne({
       where: {
         deleted_at: 0,
