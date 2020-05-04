@@ -4,7 +4,7 @@ export interface Omafile {
   uploadDir: string;
 }
 interface IStages {
-  fetch?: string | string[];
-  build?: string | string[];
-  deploy?: string | string[];
+  fetch?: { cwd: string; command: string }[];
+  build?: { cwd: string; command: string }[];
+  deploy?: { cwd: string; command: string }[];
 }

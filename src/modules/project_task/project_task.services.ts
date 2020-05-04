@@ -69,7 +69,10 @@ export class ProjectTaskService {
       author: string;
       date: string;
       message: string;
-    }>((resolve, reject) => {
+    }>(async (resolve, reject) => {
+      await runExec(`git checkout ${environment.branch}`, {
+        cwd: repositoryPath,
+      });
       return runExec(
         `git log -1 --date=iso --pretty=format:'{"version": "%h","author": "%aN <%aE>","date": "%ad","message": "%s"}' ${environment.branch} --`,
         {

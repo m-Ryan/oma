@@ -153,19 +153,15 @@ export async function pushToServer(task: ProjectTaskEntity) {
   conn.end();
 }
 
-async function runStage(stage: string | string[], cwd: string) {
+async function runStage(
+  stage: { cwd: string; command: string }[],
+  cwd: string,
+) {
   const information: string[] = [];
   if (!stage) return information;
-  if (Array.isArray(stage)) {
-    for await (const step of stage) {
-      await runExec(step, {
-        cwd,
-        onProgress: data => information.push(data),
-      });
-    }
-  } else {
-    await runExec(stage, {
-      cwd,
+  for await (const step of stage) {
+    await runExec(step.command, {
+      cwd: path.join(cwd, step.cwd),
       onProgress: data => information.push(data),
     });
   }
