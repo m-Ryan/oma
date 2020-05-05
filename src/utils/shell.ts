@@ -21,15 +21,13 @@ export function runExec(
       console.log(chalk.blue(`${data}`));
       onProgress && onProgress(data);
     });
+    child.stderr.on('data', function(error) {
+      console.log(chalk.red(`${error}`));
+      onError && onError(error);
+    });
     child.stdout.on('end', function() {
-      console.log('end');
       onEnd && onEnd();
       resolve();
-    });
-    child.stdout.on('error', function(error) {
-      console.log(chalk.red(`${error}`));
-      onError(error);
-      reject(error);
     });
   });
 }

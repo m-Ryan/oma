@@ -1,5 +1,8 @@
 import { IsString, IsNumber } from 'class-validator';
-import { ProjectTaskEntityStatus } from '../entities/project_task.entity';
+import {
+  ProjectTaskEntityStatus,
+  ProjectTaskEntityReleaseStatus,
+} from '../entities/project_task.entity';
 
 export class UpdateTaskDTO {
   @IsString()
@@ -7,4 +10,7 @@ export class UpdateTaskDTO {
 
   @IsNumber()
   status: ProjectTaskEntityStatus;
+
+  @IsNumber()
+  release_status: ProjectTaskEntityReleaseStatus;
 }

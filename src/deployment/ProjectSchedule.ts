@@ -2,6 +2,7 @@ import { createBuildPipline } from './ProjectTask';
 import {
   ProjectTaskEntity,
   ProjectTaskEntityStatus,
+  ProjectTaskEntityReleaseStatus,
 } from '../modules/project_task/entities/project_task.entity';
 import { ProjectTaskService } from '../modules/project_task/project_task.services';
 
@@ -61,7 +62,15 @@ export class ProjectSchedule {
     infomation: string;
     status: ProjectTaskEntityStatus;
   }) {
-    this.service.update(task.task_id, { infomation, status });
+    const releaseStatus =
+      task.project_env.auto_deploy && status === ProjectTaskEntityStatus.SUCCESS
+        ? ProjectTaskEntityReleaseStatus.SUCCESS
+        : task.release_status;
+    this.service.update(task.task_id, {
+      infomation,
+      status,
+      release_status: releaseStatus,
+    });
     this.taskBuildQueue = this.taskBuildQueue.filter(item => item !== task);
   }
 }

@@ -16,6 +16,13 @@ export enum ProjectTaskEntityStatus {
   OVERWRITE = 5,
 }
 
+export enum ProjectTaskEntityReleaseStatus {
+  PENDING = 1,
+  DOING = 2,
+  SUCCESS = 3,
+  ERROR = 4,
+}
+
 @Entity('project_task')
 export class ProjectTaskEntity {
   @PrimaryGeneratedColumn() task_id: number;
@@ -80,6 +87,11 @@ export class ProjectTaskEntity {
     type: 'smallint',
   })
   status: ProjectTaskEntityStatus;
+
+  @Column({
+    type: 'smallint',
+  })
+  release_status: ProjectTaskEntityReleaseStatus;
 
   @Column({
     type: 'int',

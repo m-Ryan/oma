@@ -18,14 +18,13 @@ import { ProjectEntity } from '../project/entities/project.entity';
 import {
   ProjectTaskEntity,
   ProjectTaskEntityStatus,
+  ProjectTaskEntityReleaseStatus,
 } from './entities/project_task.entity';
 import { ProjectEnvironmentEntity } from '../project/entities/project_environment.entity';
 import { UpdateTaskDTO } from './dto/update-task.dto';
 import { REPOSITORY_DIR, successResponse } from '../../constant';
 import { runExec } from '../../utils/shell';
 import { ProjectSchedule } from '../../deployment/ProjectSchedule';
-import { PlaybackDTO } from './dto/playback.dto';
-import { ReleaseDto } from './dto/push.dto';
 import { pushToServer } from '../../deployment/ProjectTask';
 
 @Injectable({
@@ -70,21 +69,22 @@ export class ProjectTaskService {
       date: string;
       message: string;
     }>(async (resolve, reject) => {
-      await runExec(`git checkout ${environment.branch}`, {
-        cwd: repositoryPath,
-      });
-      return runExec(
+      try {
+        await runExec(`git checkout -f ${environment.branch}`, {
+          cwd: repositoryPath,
+        });
+      } catch (error) {}
+      await runExec(
         `git log -1 --date=iso --pretty=format:'{"version": "%h","author": "%aN <%aE>","date": "%ad","message": "%s"}' ${environment.branch} --`,
         {
           cwd: repositoryPath,
           onProgress: data => resolve(JSON.parse(data)),
           onEnd: () =>
-            reject(
-              new NotFoundException(
-                `分支不存在， bad revision ${environment.branch}`,
-              ),
+            new NotFoundException(
+              `分支不存在， bad revision ${environment.branch}`,
             ),
-          onError: err => reject(err),
+
+          onError: err => new NotFoundException(err),
         },
       );
     });
@@ -94,6 +94,7 @@ export class ProjectTaskService {
     newTask.commit = commit.message;
     newTask.version = commit.version;
     newTask.status = ProjectTaskEntityStatus.PENDING;
+    newTask.release_status = ProjectTaskEntityReleaseStatus.PENDING;
     newTask.created_at = getNowTimeStamp();
     newTask.updated_at = getNowTimeStamp();
     newTask.project_env_id = environment.project_env_id;
@@ -133,6 +134,7 @@ export class ProjectTaskService {
     newTask.commit = oldTask.commit;
     newTask.version = oldTask.version;
     newTask.status = ProjectTaskEntityStatus.PENDING;
+    newTask.release_status = ProjectTaskEntityReleaseStatus.PENDING;
     newTask.created_at = getNowTimeStamp();
     newTask.updated_at = getNowTimeStamp();
     newTask.project_env_id = oldTask.project_env_id;
@@ -172,7 +174,14 @@ export class ProjectTaskService {
 
     task.project_env = environment;
 
-    await pushToServer(task);
+    try {
+      await pushToServer(task);
+      task.release_status = ProjectTaskEntityReleaseStatus.SUCCESS;
+    } catch (error) {
+      task.release_status = ProjectTaskEntityReleaseStatus.ERROR;
+      await this.pjt.save(task);
+      throw new NotAcceptableException(error);
+    }
     return successResponse;
   }
 

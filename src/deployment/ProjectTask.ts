@@ -6,7 +6,7 @@ import {
   mkdir,
 } from '../utils/util';
 import { REPOSITORY_DIR, DEPLOYMENT_DIR } from '../constant';
-import { getSSHInstance } from '../utils/ssh';
+import { getSSHInstance, SSHInstance } from '../utils/ssh';
 import { SSHEntity, SSHType } from '../modules/ssh/entities/ssh.entity';
 import chalk from 'chalk';
 import { decrypt } from '../utils/crypto';
@@ -36,24 +36,36 @@ export async function createBuildPipline(options: {
   const deploymentDir = path.join(DEPLOYMENT_DIR, projectDir);
   const information: string[] = [];
   try {
-    // stage fetch
-    await runExec(`git fetch --no-tags --force --progress`, {
-      cwd: repositoryPath,
-      onProgress: data => information.push(data),
-    });
-    await runExec(`git checkout -f ${task.version}`, {
-      cwd: repositoryPath,
-      onProgress: data => information.push(data),
-    });
     let omafile: Omafile;
+    let currentCommitId: string = '';
     try {
       omafile = await fs.readJSON(path.join(repositoryPath, 'omafile.json'));
     } catch (error) {
       console.log(error);
       onError('该项目没有配置 omafile.json');
     }
-    if (!omafile) return onError('该项目没有配置 omafile.json');
 
+    // stage fetch
+    await runExec(`git fetch --no-tags --force --progress`, {
+      cwd: repositoryPath,
+      onProgress: data => information.push(data),
+    });
+
+    try {
+      await runExec(`git checkout -f ${task.version}`, {
+        cwd: repositoryPath,
+        onProgress: data => information.push(data),
+      });
+    } catch (error) {}
+
+    if (!omafile) return onError('该项目没有配置 omafile.json');
+    console.log(
+      repositoryPath,
+      omafile.uploadDir,
+      omafile,
+      path.join(repositoryPath, omafile.uploadDir),
+    );
+    console.log('run stage - fetch');
     information.push(...(await runStage(omafile.stages.fetch, repositoryPath)));
 
     // stage build
@@ -64,8 +76,10 @@ export async function createBuildPipline(options: {
     await runExec(`nvm install ${omafile.node} && nvm use ${omafile.node}`, {
       onProgress: data => information.push(data),
     });
+    console.log('run stage - build');
     information.push(...(await runStage(omafile.stages.build, repositoryPath)));
 
+    console.log('正在打包');
     // 打包
     const tarName = getTaskTarName(task);
     await runExec(
@@ -85,7 +99,7 @@ export async function createBuildPipline(options: {
 
     onSuccess(information.join(''));
   } catch (error) {
-    console.log(error);
+    information.push(error.toString());
     onError(information.join(''));
   }
 }
@@ -102,7 +116,7 @@ export async function pushToServer(task: ProjectTaskEntity) {
   try {
     omafile = await fs.readJSON(path.join(repositoryPath, 'omafile.json'));
   } catch (error) {
-    console.log(error);
+    if (!omafile) throw new NotAcceptableException('omafile.json 配置错误');
   }
   if (!omafile) throw new NotAcceptableException('该项目没有配置 omafile.json');
 
@@ -125,32 +139,38 @@ export async function pushToServer(task: ProjectTaskEntity) {
     throw new Error('上传目录不能为空');
   }
   const tarName = getTaskTarName(task);
-  await new Promise(async (resolve, reject) => {
+  return new Promise(async (resolve, reject) => {
     try {
       // 打包成临时文件
       const tarPath = path.resolve(deploymentDir, tarName);
       const tempPath = '/tmp/' + tarName;
       console.log('正在上传', tempPath);
       await conn.uploadFile(tarPath, tempPath);
+      console.log(
+        '创建目录',
+        `rm -rf ${project.upload_floder} && mkdir -p ${project.upload_floder}`,
+      );
       await conn.execComand(
         `rm -rf ${project.upload_floder} && mkdir -p ${project.upload_floder}`,
       );
-      console.log('正在解压');
+      console.log(
+        '正在解压',
+        `tar -zxPf ${tempPath} -C ${project.upload_floder}`,
+      );
       await conn.execComand(
         `tar -zxPf ${tempPath} -C ${project.upload_floder}`,
       );
       await conn.execComand(`rm -rf ${tempPath}`);
       console.log('上传成功');
 
-      await runStage(omafile.stages.deploy, repositoryPath);
+      console.log('run stage - deploy');
+      await runDeployStage(omafile.stages.deploy, project.upload_floder, conn);
       resolve();
     } catch (error) {
-      console.log('error', error);
+      conn.end();
       reject(error);
     }
   });
-
-  conn.end();
 }
 
 async function runStage(
@@ -161,8 +181,25 @@ async function runStage(
   if (!stage) return information;
   for await (const step of stage) {
     await runExec(step.command, {
-      cwd: path.join(cwd, step.cwd),
+      cwd: path.resolve(cwd, step.cwd),
       onProgress: data => information.push(data),
+    });
+  }
+  return information;
+}
+
+async function runDeployStage(
+  stage: { cwd: string; command: string }[],
+  cwd: string,
+  conn: SSHInstance,
+) {
+  const information: string[] = [];
+  if (!stage) return information;
+  for await (const step of stage) {
+    await conn.execComand(step.command, {
+      cwd: path.join(cwd, step.cwd),
+      onStdoutData: data => information.push(data),
+      onStderrData: data => information.push(data),
     });
   }
   return information;
