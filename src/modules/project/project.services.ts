@@ -24,6 +24,7 @@ import {
 } from './entities/project_member.entity';
 import { CreateProjectEnvironmentDto } from './dto/create-project-env';
 import { UpdateProjectDto } from './dto/update-project.dto';
+import { runExec } from '../../utils/shell';
 
 @Injectable()
 export class ProjectService {
@@ -34,7 +35,7 @@ export class ProjectService {
     private readonly pje: Repository<ProjectEnvironmentEntity>,
     @InjectRepository(ProjectMemberEntity)
     private readonly pjm: Repository<ProjectMemberEntity>,
-  ) {}
+  ) { }
 
   async create(dto: CreateProjectDto, userId: number) {
     return getManager().transaction(async transactionalEntityManager => {
@@ -48,7 +49,7 @@ export class ProjectService {
 
       const repositoryName = getRepositoryName(dto.git_path);
       if (!(await existsDir(repositoryName))) {
-        shelljs.exec(
+        await runExec(
           `cd ${REPOSITORY_DIR} && git clone ${dto.git_path} ${repositoryName}`,
         );
       } else {

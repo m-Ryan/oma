@@ -17,17 +17,24 @@ export function runExec(
     }
     const child = shelljs.exec(command, { async: true, silent: true });
     console.log(chalk.yellow(command), `cwd ${cwd}`);
-    child.stdout.on('data', function(data) {
+    child.stdout.on('data', function (data) {
       console.log(chalk.blue(`${data}`));
       onProgress && onProgress(data);
     });
-    child.stderr.on('data', function(error) {
+    child.stderr.on('data', function (error) {
       console.log(chalk.red(`${error}`));
       onError && onError(error);
     });
-    child.stdout.on('end', function() {
+    child.stdout.on('end', function () {
       onEnd && onEnd();
       resolve();
+    });
+    child.stdout.on('error', function () {
+      console.log('on===============error');
+      console.log('on===============error');
+      console.log('on===============error');
+      console.log('on===============error');
+      console.log('on===============error');
     });
   });
 }

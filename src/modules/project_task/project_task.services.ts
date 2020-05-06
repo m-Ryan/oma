@@ -70,15 +70,26 @@ export class ProjectTaskService {
       message: string;
     }>(async (resolve, reject) => {
       try {
-        await runExec(`git checkout -f ${environment.branch}`, {
+        await runExec(`git reset --hard`, {
           cwd: repositoryPath,
         });
-      } catch (error) {}
+        await runExec(`git checkout ${environment.branch}`, {
+          cwd: repositoryPath,
+        });
+      } catch (error) { }
       await runExec(
-        `git log -1 --date=iso --pretty=format:'{"version": "%h","author": "%aN <%aE>","date": "%ad","message": "%s"}' ${environment.branch} --`,
+        `git log -1 --date=iso --pretty=format:%h,%aN%aE,%ad,%s ${environment.branch} --`,
         {
           cwd: repositoryPath,
-          onProgress: data => resolve(JSON.parse(data)),
+          onProgress: data => {
+            const arr = data.split(',');
+            resolve({
+              version: arr[0],
+              author: arr[1],
+              date: arr[2],
+              message: arr[3],
+            });
+          },
           onEnd: () =>
             new NotFoundException(
               `分支不存在， bad revision ${environment.branch}`,

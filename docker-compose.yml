@@ -1,24 +1,7 @@
-version: '3.1'
+version: '3.3'
 
 services:
   oma:
-    image: oma:1.5
+    image: oma:1.9.1
     ports:
       - '7000:7000'
-  db:
-    image: mysql
-    command: --default-authentication-plugin=mysql_native_password
-    restart: always
-    environment:
-      MYSQL_USER: 'root'
-      MYSQL_ROOT_PASSWORD: 'oma-mysql-pwd'
-      MYSQL_PASSWORD: 'oma-mysql-pwd'
-      MYSQL_DATABASE: 'oma'
-    ports:
-      - 3306:3306
-
-  adminer:
-    image: adminer
-    restart: always
-    ports:
-      - 8080:8080

@@ -37,7 +37,6 @@ export async function createBuildPipline(options: {
   const information: string[] = [];
   try {
     let omafile: Omafile;
-    let currentCommitId: string = '';
     try {
       omafile = await fs.readJSON(path.join(repositoryPath, 'omafile.json'));
     } catch (error) {
@@ -52,11 +51,15 @@ export async function createBuildPipline(options: {
     });
 
     try {
+      await runExec(`git reset --hard`, {
+        cwd: repositoryPath,
+        onProgress: data => information.push(data),
+      });
       await runExec(`git checkout -f ${task.version}`, {
         cwd: repositoryPath,
         onProgress: data => information.push(data),
       });
-    } catch (error) {}
+    } catch (error) { }
 
     if (!omafile) return onError('该项目没有配置 omafile.json');
     console.log(
@@ -73,9 +76,12 @@ export async function createBuildPipline(options: {
       await mkdir(deploymentDir);
     }
 
-    await runExec(`nvm install ${omafile.node} && nvm use ${omafile.node}`, {
-      onProgress: data => information.push(data),
-    });
+    if (omafile.node) {
+      await runExec(`nvm use ${omafile.node}`, {
+        onProgress: data => information.push(data),
+      });
+    }
+
     console.log('run stage - build');
     information.push(...(await runStage(omafile.stages.build, repositoryPath)));
 
@@ -174,7 +180,7 @@ export async function pushToServer(task: ProjectTaskEntity) {
 }
 
 async function runStage(
-  stage: { cwd: string; command: string }[],
+  stage: { cwd: string; command: string; }[],
   cwd: string,
 ) {
   const information: string[] = [];
@@ -189,7 +195,7 @@ async function runStage(
 }
 
 async function runDeployStage(
-  stage: { cwd: string; command: string }[],
+  stage: { cwd: string; command: string; }[],
   cwd: string,
   conn: SSHInstance,
 ) {
@@ -197,7 +203,7 @@ async function runDeployStage(
   if (!stage) return information;
   for await (const step of stage) {
     await conn.execComand(step.command, {
-      cwd: path.join(cwd, step.cwd),
+      cwd: cwd + '/' + step.cwd,
       onStdoutData: data => information.push(data),
       onStderrData: data => information.push(data),
     });
