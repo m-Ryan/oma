@@ -76,6 +76,10 @@ export class ProjectTaskService {
         await runExec(`git checkout ${environment.branch}`, {
           cwd: repositoryPath,
         });
+        await runExec(`git pull --no-tags --force --progress`, {
+          cwd: repositoryPath
+        });
+
       } catch (error) { }
       await runExec(
         `git log -1 --date=iso --pretty=format:%h,%aN%aE,%ad,%s ${environment.branch} --`,

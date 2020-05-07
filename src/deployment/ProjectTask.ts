@@ -45,11 +45,6 @@ export async function createBuildPipline(options: {
     }
 
     // stage fetch
-    await runExec(`git fetch --no-tags --force --progress`, {
-      cwd: repositoryPath,
-      onProgress: data => information.push(data),
-    });
-
     try {
       await runExec(`git reset --hard`, {
         cwd: repositoryPath,
@@ -59,15 +54,14 @@ export async function createBuildPipline(options: {
         cwd: repositoryPath,
         onProgress: data => information.push(data),
       });
+      await runExec(`git pull --no-tags --force --progress`, {
+        cwd: repositoryPath,
+        onProgress: data => information.push(data),
+      });
+
     } catch (error) { }
 
     if (!omafile) return onError('该项目没有配置 omafile.json');
-    console.log(
-      repositoryPath,
-      omafile.uploadDir,
-      omafile,
-      path.join(repositoryPath, omafile.uploadDir),
-    );
     console.log('run stage - fetch');
     information.push(...(await runStage(omafile.stages.fetch, repositoryPath)));
 

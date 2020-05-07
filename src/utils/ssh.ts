@@ -121,6 +121,8 @@ export async function getSSHInstance(config: ConnectConfig) {
     });
   };
 
+  await conn.execComand('#!/bin/bash --login');
+
   return conn;
 }
 
