@@ -23,21 +23,23 @@ export function runExec(
     });
     child.stdout.setEncoding('utf8');
     console.log(chalk.yellow(command), `cwd ${cwd}`);
-    child.stdout.on('data', function(data) {
+    child.stdout.on('data', function (data) {
       console.log(chalk.blue(`${data.toString()}`));
       onProgress && onProgress(data.toString());
     });
-    child.stderr.on('data', function(err) {
+    child.stderr.on('data', function (err) {
       error = err.toString('utf-8');
       onError && onError(err.toString());
     });
-    child.stdout.on('end', function() {
+    child.stdout.on('end', function () {
       onEnd && onEnd();
-      resolve();
     });
-    child.on('exit', function(code: number, signal: string) {
+    child.on('exit', function (code: number, signal: string) {
       if (code !== 0) {
+        console.log(chalk.red(error));
         reject(error);
+      } else {
+        resolve();
       }
     });
   });

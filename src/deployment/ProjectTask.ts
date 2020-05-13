@@ -36,36 +36,28 @@ export async function createBuildPipline(options: {
   const deploymentDir = path.join(DEPLOYMENT_DIR, projectDir);
   const information: string[] = [];
   try {
-    let omafile: Omafile;
-    try {
-      omafile = await fs.readJSON(path.join(repositoryPath, 'omafile.json'));
-    } catch (error) {
-      console.log(error);
-      onError('该项目没有配置 omafile.json');
-    }
+
+    let omafile: Omafile = await fs.readJSON(path.join(repositoryPath, 'omafile.json'));
+    if (!omafile) return onError('该项目没有配置 omafile.json');
 
     await runExec(`export ${project_env.variables}`);
 
     // stage fetch
-    try {
-      await runExec(`git reset --hard`, {
-        cwd: repositoryPath,
-        onProgress: data => information.push(data),
-      });
-      await runExec(`git checkout -f ${task.version}`, {
-        cwd: repositoryPath,
-        onProgress: data => information.push(data),
-      });
-      await runExec(`git pull --no-tags --force --progress`, {
-        cwd: repositoryPath,
-        onProgress: data => information.push(data),
-      });
-    } catch (error) {}
+    await runExec(`git reset --hard`, {
+      cwd: repositoryPath,
+      onProgress: data => information.push(data),
+    });
+    await runExec(`git switch -f ${task.version}`, {
+      cwd: repositoryPath,
+      onProgress: data => information.push(data),
+    });
+    await runExec(`git pull --no-tags --force --progress`, {
+      cwd: repositoryPath,
+      onProgress: data => information.push(data),
+    });
 
-    if (!omafile) return onError('该项目没有配置 omafile.json');
     console.log('run stage - fetch');
     information.push(...(await runStage(omafile.stages.fetch, repositoryPath)));
-
     // stage build
     if (!(await existsDir(deploymentDir))) {
       await mkdir(deploymentDir);
@@ -76,10 +68,8 @@ export async function createBuildPipline(options: {
         onProgress: data => information.push(data),
       });
     }
-
     console.log('run stage - build');
     information.push(...(await runStage(omafile.stages.build, repositoryPath)));
-
     console.log('正在打包');
     // 打包
     const tarName = getTaskTarName(task);
@@ -100,6 +90,7 @@ export async function createBuildPipline(options: {
 
     onSuccess(information.join(''));
   } catch (error) {
+    console.log('捕获到错误', error);
     information.push(error.toString());
     onError(information.join(''));
   }
@@ -177,7 +168,7 @@ export async function pushToServer(task: ProjectTaskEntity) {
 }
 
 async function runStage(
-  stage: { cwd: string; command: string }[],
+  stage: { cwd: string; command: string; }[],
   cwd: string,
 ) {
   const information: string[] = [];
@@ -192,7 +183,7 @@ async function runStage(
 }
 
 async function runDeployStage(
-  stage: { cwd: string; command: string }[],
+  stage: { cwd: string; command: string; }[],
   cwd: string,
   conn: SSHInstance,
 ) {
