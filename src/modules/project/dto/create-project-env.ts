@@ -1,7 +1,6 @@
-import { IsString, IsInt, } from 'class-validator';
+import { IsString, IsInt } from 'class-validator';
 
 export class CreateProjectEnvironmentDto {
-
   @IsInt()
   readonly project_id: number;
   @IsString()

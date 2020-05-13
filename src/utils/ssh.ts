@@ -101,6 +101,7 @@ export async function getSSHInstance(config: ConnectConfig) {
     return new Promise<ClientChannel>(async (resolve, reject) => {
       command = cwd ? `cd ${cwd} && ${command}` : command;
       console.log(chalk.blueBright(command));
+      let error = '';
       conn.exec(`${command}`, (err, stream: ClientChannel) => {
         if (err) {
           return reject(err);
@@ -110,12 +111,16 @@ export async function getSSHInstance(config: ConnectConfig) {
           onStderrData && onStderrData(data.toString());
         });
         stream.stderr.on('data', (data: string | Buffer) => {
-          console.log(data.toString());
+          error = data.toString();
           onStderrData && onStderrData(data.toString());
         });
-        stream.stdout.on('close', () => {
-          onClose && onClose();
-          resolve();
+        stream.on('exit', function(code: number, signal: string) {
+          if (code !== 0) {
+            console.log(chalk.red(error));
+            reject(error);
+          } else {
+            resolve();
+          }
         });
       });
     });

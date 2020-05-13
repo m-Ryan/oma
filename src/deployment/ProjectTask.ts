@@ -36,8 +36,9 @@ export async function createBuildPipline(options: {
   const deploymentDir = path.join(DEPLOYMENT_DIR, projectDir);
   const information: string[] = [];
   try {
-
-    let omafile: Omafile = await fs.readJSON(path.join(repositoryPath, 'omafile.json'));
+    let omafile: Omafile = await fs.readJSON(
+      path.join(repositoryPath, 'omafile.json'),
+    );
     if (!omafile) return onError('该项目没有配置 omafile.json');
 
     await runExec(`export ${project_env.variables}`);
@@ -47,11 +48,7 @@ export async function createBuildPipline(options: {
       cwd: repositoryPath,
       onProgress: data => information.push(data),
     });
-    await runExec(`git switch -f ${task.version}`, {
-      cwd: repositoryPath,
-      onProgress: data => information.push(data),
-    });
-    await runExec(`git pull --no-tags --force --progress`, {
+    await runExec(`git switch --detach ${task.version}`, {
       cwd: repositoryPath,
       onProgress: data => information.push(data),
     });
@@ -63,11 +60,11 @@ export async function createBuildPipline(options: {
       await mkdir(deploymentDir);
     }
 
-    if (omafile.node) {
-      await runExec(`nvm use ${omafile.node}`, {
-        onProgress: data => information.push(data),
-      });
-    }
+    // if (omafile.node) {
+    //   await runExec(`n use ${omafile.node}`, {
+    //     onProgress: data => information.push(data),
+    //   });
+    // }
     console.log('run stage - build');
     information.push(...(await runStage(omafile.stages.build, repositoryPath)));
     console.log('正在打包');
@@ -76,7 +73,7 @@ export async function createBuildPipline(options: {
     await runExec(
       `tar -zcf ${tarName} -C ${path.join(
         repositoryPath,
-        omafile.uploadDir,
+        project.upload_floder,
       )} .`,
       {
         cwd: deploymentDir,
@@ -128,7 +125,7 @@ export async function pushToServer(task: ProjectTaskEntity) {
   const conn = await getSSHInstance(connectOptions);
   console.log(chalk.yellow('正在进行上传到服务器----'));
 
-  if (!project.upload_floder) {
+  if (!project.upload_path) {
     throw new Error('上传目录不能为空');
   }
   const tarName = getTaskTarName(task);
@@ -142,23 +139,21 @@ export async function pushToServer(task: ProjectTaskEntity) {
       await conn.uploadFile(tarPath, tempPath);
       console.log(
         '创建目录',
-        `rm -rf ${project.upload_floder} && mkdir -p ${project.upload_floder}`,
+        `rm -rf ${project.upload_path} && mkdir -p ${project.upload_path}`,
       );
       await conn.execComand(
-        `rm -rf ${project.upload_floder} && mkdir -p ${project.upload_floder}`,
+        `rm -rf ${project.upload_path} && mkdir -p ${project.upload_path}`,
       );
       console.log(
         '正在解压',
-        `tar -zxPf ${tempPath} -C ${project.upload_floder}`,
+        `tar -zxPf ${tempPath} -C ${project.upload_path}`,
       );
-      await conn.execComand(
-        `tar -zxPf ${tempPath} -C ${project.upload_floder}`,
-      );
+      await conn.execComand(`tar -zxPf ${tempPath} -C ${project.upload_path}`);
       await conn.execComand(`rm -rf ${tempPath}`);
       console.log('上传成功');
 
       console.log('run stage - deploy');
-      await runDeployStage(omafile.stages.deploy, project.upload_floder, conn);
+      await runDeployStage(omafile.stages.deploy, project.upload_path, conn);
       resolve();
     } catch (error) {
       conn.end();
@@ -168,7 +163,7 @@ export async function pushToServer(task: ProjectTaskEntity) {
 }
 
 async function runStage(
-  stage: { cwd: string; command: string; }[],
+  stage: { cwd: string; command: string }[],
   cwd: string,
 ) {
   const information: string[] = [];
@@ -183,7 +178,7 @@ async function runStage(
 }
 
 async function runDeployStage(
-  stage: { cwd: string; command: string; }[],
+  stage: { cwd: string; command: string }[],
   cwd: string,
   conn: SSHInstance,
 ) {

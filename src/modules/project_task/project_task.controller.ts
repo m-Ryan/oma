@@ -32,6 +32,7 @@ export class ProjectTaskController {
 
   @Post('create')
   create(@Body() dto: { project_env_id: number }) {
+    console.log(dto);
     return this.service.create(dto.project_env_id);
   }
 

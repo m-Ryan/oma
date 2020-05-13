@@ -35,7 +35,7 @@ export class ProjectService {
     private readonly pje: Repository<ProjectEnvironmentEntity>,
     @InjectRepository(ProjectMemberEntity)
     private readonly pjm: Repository<ProjectMemberEntity>,
-  ) { }
+  ) {}
 
   async create(dto: CreateProjectDto, userId: number) {
     return getManager().transaction(async transactionalEntityManager => {
@@ -48,13 +48,12 @@ export class ProjectService {
       }
 
       const repositoryName = getRepositoryName(dto.git_path);
-      if (!(await existsDir(repositoryName))) {
-        await runExec(
-          `cd ${REPOSITORY_DIR} && git clone ${dto.git_path} ${repositoryName}`,
-        );
-      } else {
-        throw new NotAcceptableException('已有同名项目');
-      }
+      await runExec(`rm -rf ${repositoryName}`, {
+        cwd: REPOSITORY_DIR,
+      });
+      await runExec(`git clone ${dto.git_path} ${repositoryName}`, {
+        cwd: REPOSITORY_DIR,
+      });
       if (!dto.environments.length) {
         throw new NotAcceptableException('至少要有一个部署环境');
       }
@@ -66,6 +65,7 @@ export class ProjectService {
       newProject.name = dto.name;
       newProject.desc = dto.desc;
       newProject.upload_floder = dto.upload_floder;
+      newProject.upload_path = dto.upload_path;
       newProject.repository_name = repositoryName;
       newProject.git_path = dto.git_path;
       newProject.created_at = now;
@@ -128,6 +128,7 @@ export class ProjectService {
       if (dto.name) project.name = dto.name;
       if (dto.desc) project.desc = dto.desc;
       if (dto.upload_floder) project.upload_floder = dto.upload_floder;
+      if (dto.upload_path) project.upload_path = dto.upload_path;
       project.updated_user_id = userId;
 
       // 先全部删掉

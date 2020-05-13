@@ -89,37 +89,40 @@ export class ProjectTaskService {
         await runExec(`git reset --hard`, {
           cwd: repositoryPath,
         });
-        await runExec(`git fetch --all`, {
+        await runExec(`git fetch -f`, {
           cwd: repositoryPath,
         });
         await runExec(`git switch ${environment.branch}`, {
           cwd: repositoryPath,
         });
-        await runExec(`git pull --no-tags --force --progress`, {
+        await runExec(`git pull -f`, {
           cwd: repositoryPath,
         });
-      } catch (error) {}
-      await runExec(
-        `git log -1 --date=iso --pretty=format:%h,%aN%aE,%ad,%s ${environment.branch} --`,
-        {
-          cwd: repositoryPath,
-          onProgress: data => {
-            const arr = data.split(',');
-            resolve({
-              version: arr[0],
-              author: arr[1],
-              date: arr[2],
-              message: arr[3],
-            });
-          },
-          onEnd: () =>
-            new NotFoundException(
-              `分支不存在， bad revision ${environment.branch}`,
-            ),
 
-          onError: err => new NotFoundException(err),
-        },
-      );
+        await runExec(
+          `git log -1 --date=iso --pretty=format:%h,%aN%aE,%ad,%s ${environment.branch} --`,
+          {
+            cwd: repositoryPath,
+            onProgress: data => {
+              const arr = data.split(',');
+              resolve({
+                version: arr[0],
+                author: arr[1],
+                date: arr[2],
+                message: arr[3],
+              });
+            },
+            onEnd: () =>
+              new NotFoundException(
+                `分支不存在， bad revision ${environment.branch}`,
+              ),
+
+            onError: err => new NotFoundException(err),
+          },
+        );
+      } catch (error) {
+        reject(error);
+      }
     });
     const newTask = this.pjt.create();
     newTask.repository = environment.project.repository_name;

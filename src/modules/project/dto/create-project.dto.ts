@@ -19,6 +19,10 @@ export class CreateProjectDto {
   @IsString()
   readonly upload_floder: string;
 
+  @IsNotEmpty()
+  @IsString()
+  readonly upload_path: string;
+
   @IsString()
   readonly desc: string;
 

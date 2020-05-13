@@ -57,6 +57,12 @@ export class ProjectEntity {
   upload_floder: string;
 
   @Column({
+    type: 'varchar',
+    default: '',
+  })
+  upload_path: string;
+
+  @Column({
     type: 'int',
     default: 0,
   })

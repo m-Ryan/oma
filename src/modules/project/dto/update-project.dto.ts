@@ -16,6 +16,9 @@ export class UpdateProjectDto {
   readonly upload_floder: string;
 
   @IsString()
+  readonly upload_path: string;
+
+  @IsString()
   readonly desc: string;
 
   @ArrayNotEmpty()
