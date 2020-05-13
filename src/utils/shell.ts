@@ -15,28 +15,30 @@ export function runExec(
     if (cwd) {
       shelljs.cd(cwd);
     }
-    const child = shelljs.exec(command, { async: true, silent: true, fatal: true });
+    let error = '';
+    const child = shelljs.exec(command, {
+      async: true,
+      silent: true,
+      fatal: true,
+    });
     child.stdout.setEncoding('utf8');
     console.log(chalk.yellow(command), `cwd ${cwd}`);
-    child.stdout.on('data', function (data) {
+    child.stdout.on('data', function(data) {
       console.log(chalk.blue(`${data.toString()}`));
       onProgress && onProgress(data.toString());
     });
-    child.stderr.on('data', function (error) {
-      console.log(chalk.red(`${error.toString('utf-8')}`));
-      onError && onError(error.toString());
+    child.stderr.on('data', function(err) {
+      error = err.toString('utf-8');
+      onError && onError(err.toString());
     });
-    child.stdout.on('end', function () {
+    child.stdout.on('end', function() {
       onEnd && onEnd();
       resolve();
     });
-    child.on('exit', function (code: number, signal: string) {
-      console.log('on===============error');
-      console.log('on===============error');
-      console.log(code, signal);
-      console.log('on===============error');
-      console.log('on===============error');
-      console.log('on===============error');
+    child.on('exit', function(code: number, signal: string) {
+      if (code !== 0) {
+        reject(error);
+      }
     });
   });
 }

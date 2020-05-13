@@ -44,6 +44,8 @@ export async function createBuildPipline(options: {
       onError('该项目没有配置 omafile.json');
     }
 
+    await runExec(`export ${project_env.variables}`);
+
     // stage fetch
     try {
       await runExec(`git reset --hard`, {
@@ -58,8 +60,7 @@ export async function createBuildPipline(options: {
         cwd: repositoryPath,
         onProgress: data => information.push(data),
       });
-
-    } catch (error) { }
+    } catch (error) {}
 
     if (!omafile) return onError('该项目没有配置 omafile.json');
     console.log('run stage - fetch');
@@ -106,6 +107,7 @@ export async function createBuildPipline(options: {
 
 export async function pushToServer(task: ProjectTaskEntity) {
   const {
+    project_env,
     project_env: { ssh, project },
   } = task;
   const projectDir = getRepositoryName(project.git_path);
@@ -145,6 +147,7 @@ export async function pushToServer(task: ProjectTaskEntity) {
       const tarPath = path.resolve(deploymentDir, tarName);
       const tempPath = '/tmp/' + tarName;
       console.log('正在上传', tempPath);
+      await conn.execComand(`export ${project_env.variables}`);
       await conn.uploadFile(tarPath, tempPath);
       console.log(
         '创建目录',
@@ -174,7 +177,7 @@ export async function pushToServer(task: ProjectTaskEntity) {
 }
 
 async function runStage(
-  stage: { cwd: string; command: string; }[],
+  stage: { cwd: string; command: string }[],
   cwd: string,
 ) {
   const information: string[] = [];
@@ -189,7 +192,7 @@ async function runStage(
 }
 
 async function runDeployStage(
-  stage: { cwd: string; command: string; }[],
+  stage: { cwd: string; command: string }[],
   cwd: string,
   conn: SSHInstance,
 ) {

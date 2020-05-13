@@ -60,6 +60,22 @@ export class ProjectTaskService {
     if (environment.project.deleted_at > 0) {
       throw new NotFoundException('项目不存在');
     }
+    /**
+     * using credential maocanhua
+      > git rev-parse --is-inside-work-tree # timeout=10
+      Fetching changes from the remote Git repository
+      > git config remote.origin.url https://github.com/m-Ryan/RyanCMS.git # timeout=10
+      Fetching without tags
+      Fetching upstream changes from https://github.com/m-Ryan/RyanCMS.git
+      > git --version # timeout=10
+      using GIT_ASKPASS to set credentials m-ryan
+      > git fetch --no-tags --force --progress -- https://github.com/m-Ryan/RyanCMS.git +refs/heads/feature/jenkins:refs/remotes/origin/feature/jenkins # timeout=10
+      Checking out Revision da54bf0698512522c9029a731099d6d317d57903 (feature/jenkins)
+      > git config core.sparsecheckout # timeout=10
+      > git checkout -f da54bf0698512522c9029a731099d6d317d57903 # timeout=10
+      Commit message: "jenkins"
+      > git rev-list --no-walk 2e6cecc4360a0ca5dc90d1af650b0e7464d08627 # timeout=10
+     */
 
     const projectDir = getRepositoryName(environment.project.git_path);
     const repositoryPath = path.join(REPOSITORY_DIR, projectDir);
@@ -73,14 +89,16 @@ export class ProjectTaskService {
         await runExec(`git reset --hard`, {
           cwd: repositoryPath,
         });
-        await runExec(`git checkout ${environment.branch}`, {
+        await runExec(`git fetch --all`, {
+          cwd: repositoryPath,
+        });
+        await runExec(`git switch ${environment.branch}`, {
           cwd: repositoryPath,
         });
         await runExec(`git pull --no-tags --force --progress`, {
-          cwd: repositoryPath
+          cwd: repositoryPath,
         });
-
-      } catch (error) { }
+      } catch (error) {}
       await runExec(
         `git log -1 --date=iso --pretty=format:%h,%aN%aE,%ad,%s ${environment.branch} --`,
         {
